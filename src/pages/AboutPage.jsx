@@ -178,11 +178,132 @@ export default function AboutPage() {
           </ul>
         </motion.div>
 
-        {/* Contact */}
+        {/* About the Creator - College Initiative */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
+          className="card mb-6 bg-gradient-to-br from-primary-50 to-white border-primary-200"
+        >
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+              <Heart className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-medium text-gray-900">A Student Initiative</h2>
+              <p className="text-sm text-primary-600">Built with empathy, for students</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 text-gray-700">
+            <p className="leading-relaxed">
+              MindSpace was born out of a deeply personal understanding of student mental health challenges. 
+              Many students today face overwhelming academic pressure, social anxiety, loneliness, and depression—often 
+              suffering in silence. The sad reality is that mental health struggles have become alarmingly common on 
+              college campuses, yet access to timely support remains limited.
+            </p>
+
+            <div className="bg-white p-4 rounded-lg border border-primary-100">
+              <p className="text-gray-800 italic mb-3">
+                "I've been there. I've felt the crushing weight of academic stress, the loneliness of being surrounded 
+                by people yet feeling completely alone. I realized that many of my peers were silently battling similar 
+                struggles, unable to find immediate support when they needed it most. That's when I knew something had 
+                to change."
+              </p>
+              <p className="text-sm text-gray-600">
+                — The motivation behind MindSpace
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-primary-100">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">About the Project</h3>
+              <p className="leading-relaxed mb-4">
+                MindSpace was developed as part of the <span className="font-semibold text-primary-700">Digital 
+                Transformation Lab (DTL)</span> course initiative at <span className="font-semibold text-primary-700">
+                RV College of Engineering (RVCE)</span>. This project represents the culmination of technical expertise, 
+                empathy-driven design, and a genuine commitment to making mental health support more accessible to students.
+              </p>
+
+              <div className="bg-gradient-to-r from-primary-100 to-blue-50 p-5 rounded-lg mb-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Created By</h4>
+                <div className="space-y-2">
+                  <p className="text-gray-800">
+                    <span className="font-bold text-primary-700 text-lg">Naga Venkata Akhilesh Chandaluri</span>
+                  </p>
+                  <p className="text-gray-700">
+                    Computer Science & AIML, 2nd Year<br />
+                    RV College of Engineering, Bangalore
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-3">Technical Excellence</h4>
+                <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                  This platform showcases cutting-edge technologies including React 18, Supabase for real-time 
+                  database management, Groq's Llama 3.3 70B AI model for empathetic conversations, and a carefully 
+                  crafted user experience designed with students' mental wellbeing in mind. Every feature—from mood 
+                  tracking to AI-powered emotional support—was built with privacy, ethics, and genuine care at its core.
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  What sets MindSpace apart is not just the technology, but the <span className="font-semibold">deep 
+                  understanding of student struggles</span> that guided every design decision. This isn't just a 
+                  technical project—it's a mission to make mental health support accessible, immediate, and judgment-free 
+                  for every student who needs it.
+                </p>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-3">Connect & Contribute</h4>
+                <div className="flex flex-wrap gap-4">
+                  <a 
+                    href="mailto:nvakhileshc.ai24@rvce.edu.in"
+                    className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  >
+                    <span>📧</span>
+                    <span>Email</span>
+                  </a>
+                  <a 
+                    href="https://github.com/akhileshchandaluri"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  >
+                    <span>💻</span>
+                    <span>GitHub</span>
+                  </a>
+                  <a 
+                    href="https://www.linkedin.com/in/akhilesh-chandaluri-b8a87b292"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  >
+                    <span>💼</span>
+                    <span>LinkedIn</span>
+                  </a>
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  Open to collaborations, feedback, and conversations about mental health tech
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-primary-100 p-4 rounded-lg mt-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <span className="font-semibold text-primary-800">A Note of Gratitude:</span> This project wouldn't 
+                have been possible without the support of RVCE's Digital Transformation Lab initiative, which empowers 
+                students to build solutions for real-world problems. MindSpace is proof that when technology meets 
+                empathy, we can create tools that truly make a difference in people's lives.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Contact */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
           className="card text-center bg-primary-50 border-primary-100"
         >
           <h2 className="text-2xl font-medium text-gray-900 mb-2">Questions or Concerns?</h2>
@@ -198,11 +319,11 @@ export default function AboutPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 0.9 }}
           className="text-center mt-8 text-sm text-gray-500"
         >
-          <p>MindSpace © 2026 • Designed for students, by students</p>
-          <p className="mt-2">This platform is designed exclusively for students</p>
+          <p>MindSpace © 2026 • Designed for students, by a student who understands</p>
+          <p className="mt-2">A Digital Transformation Lab Initiative • RV College of Engineering</p>
         </motion.div>
       </div>
     </div>
