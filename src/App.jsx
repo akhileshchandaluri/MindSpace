@@ -17,30 +17,55 @@ import FeedbackPage from './pages/FeedbackPage'
 import AboutPage from './pages/AboutPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminPanel from './pages/AdminPanel'
+import { supabase } from './lib/supabase'
+import { getUserRole } from './lib/auth'
 
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('mindspace_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    setLoading(false)
+    // Check for existing Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        getUserRole(session.user.id).then(role => {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: role || 'student',
+            isAnonymous: false,
+            createdAt: Date.now()
+          })
+        })
+      }
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const role = await getUserRole(session.user.id)
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          role: role || 'student',
+          isAnonymous: false,
+          createdAt: Date.now()
+        })
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleLogin = (userData) => {
-    const userWithTimestamp = {
-      ...userData,
-      createdAt: userData.createdAt || Date.now()
-    }
-    setUser(userWithTimestamp)
-    localStorage.setItem('mindspace_user', JSON.stringify(userWithTimestamp))
+    setUser(userData)
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     setUser(null)
     localStorage.removeItem('mindspace_user')
   }

@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Heart, Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react'
+import { signUp, signIn, getUserRole } from '../lib/auth'
+import { useToast } from '../components/Toast'
 
 export default function AuthPage({ onLogin }) {
   const navigate = useNavigate()
+  const toast = useToast()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
-  const [anonymous, setAnonymous] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,82 +19,78 @@ export default function AuthPage({ onLogin }) {
   })
   const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
-    if (anonymous) {
-      const anonymousUser = {
-        id: 'anon_' + Date.now(),
-        email: 'Anonymous User',
-        isAnonymous: true,
-        role: 'student',
-        createdAt: Date.now()
+    try {
+      if (!formData.email || !formData.password) {
+        setError('Please fill in all fields')
+        setLoading(false)
+        return
       }
-      onLogin(anonymousUser)
-      navigate('/dashboard')
-      return
-    }
 
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields')
-      return
-    }
+      // Block teacher signup in frontend
+      if (!isLogin && formData.email.toLowerCase().includes('teacher')) {
+        setError('Teacher accounts must be created by administrators. Please contact your institution.')
+        setLoading(false)
+        return
+      }
 
-    // Block teacher signup in frontend
-    if (!isLogin && formData.email.toLowerCase().includes('teacher')) {
-      setError('Teacher accounts must be created by administrators. Please contact your institution.')
-      return
-    }
+      if (!isLogin && formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match')
+        setLoading(false)
+        return
+      }
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
+      if (!isLogin && !formData.consent) {
+        setError('Please accept the consent terms')
+        setLoading(false)
+        return
+      }
 
-    if (!isLogin && !formData.consent) {
-      setError('Please accept the consent terms')
-      return
-    }
+      let user
+      if (isLogin) {
+        // Login with Supabase
+        user = await signIn(formData.email, formData.password)
+      } else {
+        // Signup with Supabase
+        user = await signUp(formData.email, formData.password)
+      }
 
-    // Check if teacher login (must exist in "database")
-    if (isLogin && formData.email.toLowerCase().includes('teacher')) {
-      // In production, this would verify against actual database
-      // For now, allow any teacher email to login (simulated)
-      const teacherUser = {
-        id: Date.now(),
-        email: formData.email,
+      if (!user) {
+        setError('Authentication failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Get user role from database
+      const role = await getUserRole(user.id)
+      
+      const userData = {
+        id: user.id,
+        email: user.email,
+        role: role || 'student',
         isAnonymous: false,
-        role: 'teacher',
         createdAt: Date.now()
       }
-      onLogin(teacherUser)
-      navigate('/teacher-dashboard')
-      return
-    }
 
-    // Regular student authentication
-    const user = {
-      id: Date.now(),
-      email: formData.email,
-      isAnonymous: false,
-      role: 'student',
-      createdAt: Date.now()
-    }
+      onLogin(userData)
+      toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!')
 
-    onLogin(user)
-    navigate('/dashboard')
-  }
-
-  const handleAnonymous = () => {
-    const anonymousUser = {
-      id: 'anon_' + Date.now(),
-      email: 'Anonymous User',
-      isAnonymous: true,
-      role: 'student'
+      // Redirect based on role
+      if (role === 'teacher') {
+        navigate('/teacher-dashboard')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      console.error('Auth error:', err)
+      setError(err.message || 'Authentication failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    onLogin(anonymousUser)
-    navigate('/dashboard')
   }
 
   return (
