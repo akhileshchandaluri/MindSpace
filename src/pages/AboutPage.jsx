@@ -218,8 +218,8 @@ export default function AboutPage() {
             <div className="pt-4 border-t border-primary-100">
               <h3 className="text-lg font-medium text-gray-900 mb-3">About the Project</h3>
               <p className="leading-relaxed mb-4">
-                MindSpace was developed as part of the <span className="font-semibold text-primary-700">Digital 
-                Transformation Lab (DTL)</span> course initiative at <span className="font-semibold text-primary-700">
+                MindSpace was developed as part of the <span className="font-semibold text-primary-700">Design 
+                Thinking Lab (DTL)</span> course initiative at <span className="font-semibold text-primary-700">
                 RV College of Engineering (RVCE)</span>. This project represents the culmination of technical expertise, 
                 empathy-driven design, and a genuine commitment to making mental health support more accessible to students.
               </p>
@@ -291,7 +291,7 @@ export default function AboutPage() {
             <div className="bg-primary-100 p-4 rounded-lg mt-4">
               <p className="text-sm text-gray-700 leading-relaxed">
                 <span className="font-semibold text-primary-800">A Note of Gratitude:</span> This project wouldn't 
-                have been possible without the support of RVCE's Digital Transformation Lab initiative, which empowers 
+                have been possible without the support of RVCE's Design Thinking Lab initiative, which empowers 
                 students to build solutions for real-world problems. MindSpace is proof that when technology meets 
                 empathy, we can create tools that truly make a difference in people's lives.
               </p>
@@ -310,9 +310,9 @@ export default function AboutPage() {
           <p className="text-gray-700 mb-4">
             We're committed to creating the best possible experience for students.
           </p>
-          <a href="/feedback" className="text-primary-600 hover:text-primary-700 font-medium">
+          <Link to="/feedback" className="text-primary-600 hover:text-primary-700 font-medium">
             Share your feedback →
-          </a>
+          </Link>
         </motion.div>
 
         {/* Footer Note */}
@@ -323,7 +323,7 @@ export default function AboutPage() {
           className="text-center mt-8 text-sm text-gray-500"
         >
           <p>MindSpace © 2026 • Designed for students, by a student who understands</p>
-          <p className="mt-2">A Digital Transformation Lab Initiative • RV College of Engineering</p>
+          <p className="mt-2">A Design Thinking Lab Initiative • RV College of Engineering</p>
         </motion.div>
       </div>
     </div>
