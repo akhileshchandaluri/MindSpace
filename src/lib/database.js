@@ -150,8 +150,8 @@ export const saveChatMessage = async (userId, message, role) => {
     .insert([
       {
         user_id: userId,
-        message: message,
-        role: role,
+        content: message,
+        sender: role,
         context: {}
       }
     ])

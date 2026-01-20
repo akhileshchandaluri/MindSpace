@@ -31,8 +31,8 @@ export default function ChatbotPage({ user }) {
         if (chatHistory && chatHistory.length > 0) {
           setMessages(chatHistory.map(msg => ({
             id: msg.id,
-            type: msg.role,
-            content: msg.message,
+            type: msg.sender,
+            content: msg.content,
             timestamp: new Date(msg.created_at).getTime()
           })))
         } else {

@@ -7,19 +7,22 @@ export default function Navigation({ user, onLogout }) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const navLinks = user ? [
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/chat', label: 'Chat' },
-    { path: '/mood-tracking', label: 'Mood' },
-    { path: '/insights', label: 'Insights' },
-    { path: '/journal', label: 'Journal' },
-    { path: '/guidance', label: 'Guidance' },
-    { path: '/resources', label: 'Resources' },
-    { path: '/profile', label: 'Profile' },
-  ] : [
-    { path: '/about', label: 'About' },
-    { path: '/resources', label: 'Resources' },
-  ]
+  const navLinks = user ? 
+    (user.role === 'teacher' ? [
+      { path: '/teacher-dashboard', label: 'Dashboard' },
+    ] : [
+      { path: '/dashboard', label: 'Dashboard' },
+      { path: '/chat', label: 'Chat' },
+      { path: '/mood-tracking', label: 'Mood' },
+      { path: '/insights', label: 'Insights' },
+      { path: '/journal', label: 'Journal' },
+      { path: '/guidance', label: 'Guidance' },
+      { path: '/resources', label: 'Resources' },
+      { path: '/profile', label: 'Profile' },
+    ]) : [
+      { path: '/about', label: 'About' },
+      { path: '/resources', label: 'Resources' },
+    ]
 
   if (location.pathname === '/') {
     return null
@@ -34,7 +37,7 @@ export default function Navigation({ user, onLogout }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center space-x-2 group">
+          <Link to={user ? (user.role === 'teacher' ? '/teacher-dashboard' : '/dashboard') : '/'} className="flex items-center space-x-2 group">
             <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
               <Heart className="w-5 h-5 text-primary-500" />
             </div>
