@@ -36,8 +36,16 @@ function App() {
             isAnonymous: false,
             createdAt: Date.now()
           })
+          setLoading(false)
+        }).catch(err => {
+          console.error('Error getting user role:', err)
+          setLoading(false)
         })
+      } else {
+        setLoading(false)
       }
+    }).catch(err => {
+      console.error('Error getting session:', err)
       setLoading(false)
     })
 
@@ -75,7 +83,16 @@ function App() {
     localStorage.setItem('mindspace_user', JSON.stringify(userData))
   }
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading MindSpace...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <ToastProvider>
