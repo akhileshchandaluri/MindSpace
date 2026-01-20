@@ -145,111 +145,94 @@ export default function AuthPage({ onLogin }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!anonymous && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="input-field pl-11"
-                      placeholder="your.email@university.edu"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Use your college/university email
-                  </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="input-field pl-11"
+                  placeholder="your.email@university.edu"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Use your college/university email
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="input-field pl-11 pr-11"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="input-field pl-11"
+                    placeholder="••••••••"
+                  />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="input-field pl-11 pr-11"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                {!isLogin && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        className="input-field pl-11"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {!isLogin && (
-                  <div className="bg-primary-50 rounded-lg p-4 space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="consent"
-                        checked={formData.consent}
-                        onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                        className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                      <label htmlFor="consent" className="text-sm text-gray-700 leading-relaxed">
-                        I understand that MindSpace is designed to help me understand my emotions and is <strong>not a substitute for professional mental health care</strong>. I consent to my emotional data being used anonymously to improve the platform.
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </>
+              </div>
             )}
 
-            <button type="submit" className="w-full btn-primary py-3">
-              {isLogin ? 'Login' : 'Create Account'}
+            {!isLogin && (
+              <div className="bg-primary-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="consent"
+                    checked={formData.consent}
+                    onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
+                    className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="consent" className="text-sm text-gray-700 leading-relaxed">
+                    I understand that MindSpace is designed to help me understand my emotions and is <strong>not a substitute for professional mental health care</strong>. I consent to my emotional data being used anonymously to improve the platform.
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Loading...' : (isLogin ? 'Login' : 'Create Account')}
             </button>
           </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">or</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleAnonymous}
-            className="w-full btn-secondary py-3 flex items-center justify-center space-x-2"
-          >
-            <Shield className="w-5 h-5" />
-            <span>Continue Anonymously</span>
-          </button>
-
           <p className="text-xs text-gray-500 text-center mt-6 leading-relaxed">
-            Your privacy is our priority. All data is encrypted and you can choose to remain completely anonymous.
+            Your privacy is our priority. All data is encrypted and secure.
           </p>
         </div>
 
