@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import { Send, Bot, User, AlertCircle, Heart } from 'lucide-react'
+import { generateAIResponse, detectCrisis, detectEmotion } from '../lib/aiService'
+import { saveChatMessage, getChatMessages } from '../lib/database'
 
 export default function ChatbotPage({ user }) {
   const navigate = useNavigate()
@@ -19,30 +21,33 @@ export default function ChatbotPage({ user }) {
       return
     }
 
-    // Load chat history
-    const savedMessages = localStorage.getItem(`chat_${user.id}`)
-    if (savedMessages && savedMessages !== 'undefined') {
-      try {
-        const parsed = JSON.parse(savedMessages)
-        setMessages(parsed)
-      } catch (e) {
-        console.error('Failed to load chat history:', e)
+    // Load chat history from Supabase
+    const loadMessages = async () => {
+      const chatHistory = await getChatMessages(user.id)
+      if (chatHistory && chatHistory.length > 0) {
+        setMessages(chatHistory.map(msg => ({
+          id: msg.id,
+          type: msg.role,
+          content: msg.message,
+          timestamp: new Date(msg.created_at).getTime()
+        })))
+      } else {
         setWelcomeMessage()
       }
-    } else {
-      setWelcomeMessage()
     }
+    
+    loadMessages()
   }, [user, navigate])
 
-  const setWelcomeMessage = () => {
-    const welcomeMsg = [{
+  const setWelcomeMessage = async () => {
+    const welcomeMsg = {
       id: Date.now(),
       type: 'bot',
       content: `Hello${user?.isAnonymous ? '' : `, ${user?.email?.split('@')[0]}`}. I'm MindSpace, your emotional wellbeing companion. This is a safe, judgment-free space. How are you feeling today?`,
       timestamp: Date.now()
-    }]
-    setMessages(welcomeMsg)
-    localStorage.setItem(`chat_${user.id}`, JSON.stringify(welcomeMsg))
+    }
+    setMessages([welcomeMsg])
+    await saveChatMessage(user.id, welcomeMsg.content, 'bot')
   }
 
   useEffect(() => {
@@ -51,87 +56,6 @@ export default function ChatbotPage({ user }) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const detectEmotionFromText = (text) => {
-    const lowerText = text.toLowerCase()
-    
-    // Crisis keywords detection
-    const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'die', 'hurt myself', 'self-harm']
-    if (crisisKeywords.some(keyword => lowerText.includes(keyword))) {
-      return { emotion: 'crisis', stress: 10 }
-    }
-
-    // Emotion detection
-    const emotions = {
-      anxious: ['anxious', 'worried', 'nervous', 'panic', 'overwhelmed', 'stressed'],
-      sad: ['sad', 'depressed', 'down', 'hopeless', 'empty', 'lonely'],
-      angry: ['angry', 'frustrated', 'mad', 'irritated', 'annoyed'],
-      happy: ['happy', 'good', 'great', 'excited', 'joyful', 'content'],
-      tired: ['tired', 'exhausted', 'drained', 'burnout', 'fatigued']
-    }
-
-    for (const [emotion, keywords] of Object.entries(emotions)) {
-      if (keywords.some(keyword => lowerText.includes(keyword))) {
-        const stress = ['anxious', 'sad', 'angry'].includes(emotion) ? 7 : 3
-        return { emotion, stress }
-      }
-    }
-
-    return { emotion: 'neutral', stress: 5 }
-  }
-
-  const generateResponse = (userMessage) => {
-    const { emotion, stress } = detectEmotionFromText(userMessage)
-
-    // Crisis response
-    if (emotion === 'crisis') {
-      setShowCrisisWarning(true)
-      return `I'm really concerned about what you've shared. Your safety is the most important thing right now. Please reach out immediately to:
-
-• KIRAN Mental Health Helpline: 1800-599-0019
-• Vandrevala Foundation: 9999 666 555
-• Emergency Services: 112
-
-These professionals are trained to help and available 24/7. You don't have to face this alone.`
-    }
-
-    // Emotion-based responses
-    const responses = {
-      anxious: [
-        "I hear that you're feeling anxious. That's a really common feeling, especially for students. Would you like to talk about what's making you feel this way?",
-        "Anxiety can feel overwhelming. Let's take this one step at a time. Can you tell me what's been weighing on your mind?",
-        "Thank you for sharing that you're feeling anxious. What specific situations or thoughts are contributing to this feeling?"
-      ],
-      sad: [
-        "I'm sorry you're feeling down. It's okay to not be okay sometimes. Would you like to share what's been happening?",
-        "Sadness can be really heavy to carry. I'm here to listen without judgment. What's been on your mind?",
-        "Thank you for trusting me with how you're feeling. When did you start noticing these feelings?"
-      ],
-      angry: [
-        "It sounds like something has really frustrated you. Anger is a valid emotion. What happened that made you feel this way?",
-        "I can sense your frustration. Would you like to talk about what triggered these feelings?",
-        "It's okay to feel angry. Let's explore what's behind these feelings together."
-      ],
-      happy: [
-        "That's wonderful to hear! I'm glad you're feeling good. What's been going well for you?",
-        "It's great to hear positive energy from you! What's bringing you joy today?",
-        "I love hearing that you're feeling good! Would you like to share what's making you happy?"
-      ],
-      tired: [
-        "Burnout and exhaustion are common among students. You're not alone in feeling this way. What's been draining your energy?",
-        "It sounds like you've been carrying a lot. Let's talk about what's been taking up your energy.",
-        "Feeling tired isn't just physical - emotional exhaustion is real too. What's been overwhelming you?"
-      ],
-      neutral: [
-        "I'm here and listening. Can you tell me more about what's on your mind?",
-        "Thank you for sharing. How have things been going for you lately?",
-        "I'm here for you. What would you like to talk about today?"
-      ]
-    }
-
-    const emotionResponses = responses[emotion] || responses.neutral
-    return emotionResponses[Math.floor(Math.random() * emotionResponses.length)]
   }
 
   const handleSend = async () => {
@@ -146,37 +70,46 @@ These professionals are trained to help and available 24/7. You don't have to fa
 
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
+    const userInput = input
     setInput('')
     setIsTyping(true)
 
-    // Simulate AI thinking time
-    setTimeout(() => {
-      const botResponse = generateResponse(input)
+    // Save user message to database
+    await saveChatMessage(user.id, userInput, 'user')
+
+    // Check for crisis keywords
+    if (detectCrisis(userInput)) {
+      setShowCrisisWarning(true)
+    }
+
+    try {
+      // Get AI response with conversation history
+      const aiResponse = await generateAIResponse(userInput, messages.slice(-10))
+      
       const botMessage = {
         id: Date.now() + 1,
         type: 'bot',
-        content: botResponse,
+        content: aiResponse,
         timestamp: Date.now()
       }
 
       const updatedMessages = [...newMessages, botMessage]
       setMessages(updatedMessages)
-      localStorage.setItem(`chat_${user.id}`, JSON.stringify(updatedMessages))
+      
+      // Save bot response to database
+      await saveChatMessage(user.id, aiResponse, 'bot')
+      
       setIsTyping(false)
 
-      // Update mood tracking
-      const { emotion, stress } = detectEmotionFromText(input)
-      const moodData = {
-        mood: emotion,
-        stress,
-        timestamp: Date.now()
-      }
+      // Detect emotion and update mood
+      const { emotion, stressLevel } = detectEmotion(userInput)
+      toast.success(`Mood detected: ${emotion}`)
       
-      // Save to history
-      const dayIndex = Math.floor((Date.now() - (user.createdAt || Date.now())) / (1000 * 60 * 60 * 24))
-      localStorage.setItem(`mood_day_${user.id}_${dayIndex}`, JSON.stringify(moodData))
-      localStorage.setItem(`mood_${user.id}`, JSON.stringify(moodData))
-    }, 1000 + Math.random() * 2000)
+    } catch (error) {
+      console.error('Error generating response:', error)
+      toast.error('Failed to get response. Please try again.')
+      setIsTyping(false)
+    }
   }
 
   const handleKeyPress = (e) => {
