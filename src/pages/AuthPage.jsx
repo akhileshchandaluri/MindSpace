@@ -50,20 +50,22 @@ export default function AuthPage({ onLogin }) {
         return
       }
 
-      let user
+      let authData
       if (isLogin) {
         // Login with Supabase
-        user = await signIn(formData.email, formData.password)
+        authData = await signIn(formData.email, formData.password)
       } else {
         // Signup with Supabase
-        user = await signUp(formData.email, formData.password)
+        authData = await signUp(formData.email, formData.password)
       }
 
-      if (!user) {
+      if (!authData?.user) {
         setError('Authentication failed. Please try again.')
         setLoading(false)
         return
       }
+
+      const user = authData.user
 
       // Get user role from database
       const role = await getUserRole(user.id)

@@ -133,14 +133,19 @@ export const onAuthStateChange = (callback) => {
 /**
  * Get user role from database
  */
-export const getUserRole = async () => {
-  const user = await getCurrentUser()
-  if (!user) return null
+export const getUserRole = async (userId = null) => {
+  let uid = userId
+  
+  if (!uid) {
+    const user = await getCurrentUser()
+    if (!user) return null
+    uid = user.id
+  }
 
   const { data, error } = await supabase
     .from('users')
     .select('role')
-    .eq('id', user.id)
+    .eq('id', uid)
     .single()
 
   if (error) {
@@ -148,7 +153,7 @@ export const getUserRole = async () => {
     return 'student' // Default role
   }
 
-  return data.role
+  return data?.role || 'student'
 }
 
 /**

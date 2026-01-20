@@ -24,6 +24,12 @@ export default function ChatbotPage({ user }) {
     // Load chat history from Supabase
     const loadMessages = async () => {
       try {
+        if (!user?.id) {
+          console.log('No user ID available')
+          await setWelcomeMessage()
+          return
+        }
+        
         console.log('Loading chat messages for user:', user.id)
         const chatHistory = await getChatMessages(user.id)
         console.log('Chat history loaded:', chatHistory)
@@ -50,8 +56,11 @@ export default function ChatbotPage({ user }) {
   }, [user, navigate])
 
   const setWelcomeMessage = async () => {
-    try {
-      const welcomeMsg = {
+    try {      if (!user?.id) {
+        console.error('Cannot set welcome message: user ID missing')
+        return
+      }
+            const welcomeMsg = {
         id: Date.now(),
         type: 'bot',
         content: `Hello${user?.isAnonymous ? '' : `, ${user?.email?.split('@')[0]}`}. I'm MindSpace, your emotional wellbeing companion. This is a safe, judgment-free space. How are you feeling today?`,
@@ -83,6 +92,10 @@ export default function ChatbotPage({ user }) {
 
   const handleSend = async () => {
     if (!input.trim()) return
+    if (!user?.id) {
+      toast.error('Please log in to continue')
+      return
+    }
 
     const userMessage = {
       id: Date.now(),

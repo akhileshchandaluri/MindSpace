@@ -110,7 +110,7 @@ export default function StudentDashboard({ user }) {
           className="mb-8"
         >
           <h1 className="text-4xl font-medium text-gray-900 mb-2">
-            Welcome back{user.isAnonymous ? '' : `, ${user.email.split('@')[0]}`}
+            Welcome back{user?.isAnonymous ? '' : user?.email ? `, ${user.email.split('@')[0]}` : ''}
           </h1>
           <p className="text-lg text-gray-600">
             How are you feeling today?

@@ -65,7 +65,7 @@ export default function Navigation({ user, onLogout }) {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <span className="text-sm text-gray-500">{user.email}</span>
+                <span className="text-sm text-gray-500">{user?.email || 'User'}</span>
                 <button
                   onClick={onLogout}
                   className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"

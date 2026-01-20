@@ -19,7 +19,7 @@ export default function ProfilePage({ user, onUpdateUser }) {
       navigate('/auth')
       return
     }
-    setFormData(prev => ({ ...prev, email: user.email }))
+    setFormData(prev => ({ ...prev, email: user?.email || '' }))
   }, [user, navigate])
 
   const handleUpdateProfile = (e) => {
