@@ -144,18 +144,15 @@ export const deleteJournalEntry = async (entryId) => {
 // CHAT OPERATIONS
 // ========================================
 
-export const saveChatMessage = async (sender, content, context = {}) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
-
+export const saveChatMessage = async (userId, message, role) => {
   const { data, error } = await supabase
     .from('chat_messages')
     .insert([
       {
-        user_id: user.id,
-        sender,
-        content,
-        context
+        user_id: userId,
+        message: message,
+        role: role,
+        context: {}
       }
     ])
     .select()
@@ -165,14 +162,11 @@ export const saveChatMessage = async (sender, content, context = {}) => {
   return data
 }
 
-export const getChatMessages = async (limit = 50) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
-
+export const getChatMessages = async (userId, limit = 50) => {
   const { data, error } = await supabase
     .from('chat_messages')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: true })
     .limit(limit)
 

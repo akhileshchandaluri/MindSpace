@@ -23,16 +23,26 @@ export default function ChatbotPage({ user }) {
 
     // Load chat history from Supabase
     const loadMessages = async () => {
-      const chatHistory = await getChatMessages(user.id)
-      if (chatHistory && chatHistory.length > 0) {
-        setMessages(chatHistory.map(msg => ({
-          id: msg.id,
-          type: msg.role,
-          content: msg.message,
-          timestamp: new Date(msg.created_at).getTime()
-        })))
-      } else {
-        setWelcomeMessage()
+      try {
+        console.log('Loading chat messages for user:', user.id)
+        const chatHistory = await getChatMessages(user.id)
+        console.log('Chat history loaded:', chatHistory)
+        
+        if (chatHistory && chatHistory.length > 0) {
+          setMessages(chatHistory.map(msg => ({
+            id: msg.id,
+            type: msg.role,
+            content: msg.message,
+            timestamp: new Date(msg.created_at).getTime()
+          })))
+        } else {
+          console.log('No chat history, setting welcome message')
+          await setWelcomeMessage()
+        }
+      } catch (error) {
+        console.error('Error loading chat messages:', error)
+        toast.error('Failed to load chat history')
+        await setWelcomeMessage()
       }
     }
     
@@ -40,14 +50,27 @@ export default function ChatbotPage({ user }) {
   }, [user, navigate])
 
   const setWelcomeMessage = async () => {
-    const welcomeMsg = {
-      id: Date.now(),
-      type: 'bot',
-      content: `Hello${user?.isAnonymous ? '' : `, ${user?.email?.split('@')[0]}`}. I'm MindSpace, your emotional wellbeing companion. This is a safe, judgment-free space. How are you feeling today?`,
-      timestamp: Date.now()
+    try {
+      const welcomeMsg = {
+        id: Date.now(),
+        type: 'bot',
+        content: `Hello${user?.isAnonymous ? '' : `, ${user?.email?.split('@')[0]}`}. I'm MindSpace, your emotional wellbeing companion. This is a safe, judgment-free space. How are you feeling today?`,
+        timestamp: Date.now()
+      }
+      setMessages([welcomeMsg])
+      await saveChatMessage(user.id, welcomeMsg.content, 'bot')
+      console.log('Welcome message set')
+    } catch (error) {
+      console.error('Error setting welcome message:', error)
+      // Still show welcome message even if save fails
+      const welcomeMsg = {
+        id: Date.now(),
+        type: 'bot',
+        content: `Hello. I'm MindSpace, your emotional wellbeing companion. This is a safe, judgment-free space. How are you feeling today?`,
+        timestamp: Date.now()
+      }
+      setMessages([welcomeMsg])
     }
-    setMessages([welcomeMsg])
-    await saveChatMessage(user.id, welcomeMsg.content, 'bot')
   }
 
   useEffect(() => {
