@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Heart, Shield, Eye, Lock, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function AboutPage() {
