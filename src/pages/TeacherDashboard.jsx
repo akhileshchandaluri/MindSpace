@@ -154,12 +154,22 @@ export default function TeacherDashboard({ user }) {
   if (!classData) return null
 
   if (classData.isEmpty) {
-    }
-
-    setClassData(aggregatedData)
-  }, [user, navigate])
-
-  if (!user || user.role !== 'teacher' || !classData) return null
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-primary-50/30 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12"
+          >
+            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-medium text-gray-900 mb-2">No Student Data Yet</h2>
+            <p className="text-gray-600">Students need to sign up and log their moods first.</p>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-primary-50/30 py-8">
