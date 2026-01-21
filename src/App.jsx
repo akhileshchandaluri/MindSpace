@@ -25,41 +25,40 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for existing Supabase session with timeout
+    // Force stop loading after 1.5 seconds no matter what
+    const forceLoadTimeout = setTimeout(() => {
+      console.log('Force stopping loading...')
+      setLoading(false)
+    }, 1500)
+
+    // Check for existing Supabase session
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
-          // Try to get role, but don't block on it
-          try {
-            const role = await Promise.race([
-              getUserRole(session.user.id),
-              new Promise((resolve) => setTimeout(() => resolve('student'), 3000))
-            ])
-            
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              role: role || 'student',
-              isAnonymous: false,
-              createdAt: Date.now()
-            })
-          } catch (err) {
-            console.error('Error getting user role:', err)
-            // Set user anyway with default role
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              role: 'student',
-              isAnonymous: false,
-              createdAt: Date.now()
-            })
-          }
+          // Set user immediately with default role
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'student',
+            isAnonymous: false,
+            createdAt: Date.now()
+          })
+          
+          // Try to get actual role in background (don't block)
+          getUserRole(session.user.id).then(role => {
+            if (role && role !== 'student') {
+              setUser(prev => ({ ...prev, role }))
+            }
+          }).catch(err => {
+            console.error('Background role fetch error:', err)
+          })
         }
       } catch (err) {
         console.error('Error getting session:', err)
       } finally {
+        clearTimeout(forceLoadTimeout)
         setLoading(false)
       }
     }
@@ -70,7 +69,10 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         try {
-          const role = await getUserRole(session.user.id)
+          const role = await Promise.race([
+            getUserRole(session.user.id),
+            new Promise(resolve => setTimeout(() => resolve('student'), 800))
+          ])
           setUser({
             id: session.user.id,
             email: session.user.email,
@@ -93,7 +95,10 @@ function App() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(forceLoadTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const handleLogin = (userData) => {
