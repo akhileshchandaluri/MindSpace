@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import { BookOpen, Plus, Calendar, Lock, Search } from 'lucide-react'
+import { saveJournalEntry, getJournalEntries, deleteJournalEntry } from '../lib/database'
 
 export default function JournalPage({ user }) {
   const navigate = useNavigate()
@@ -26,30 +27,40 @@ export default function JournalPage({ user }) {
       return
     }
 
-    const savedEntries = localStorage.getItem(`journal_${user.id}`)
-    if (savedEntries) {
-      setEntries(JSON.parse(savedEntries))
+    const loadEntries = async () => {
+      try {
+        const data = await getJournalEntries()
+        setEntries(data)
+      } catch (error) {
+        console.error('Failed to load journal entries:', error)
+        toast.error('Failed to load journal entries')
+      }
     }
+
+    loadEntries()
   }, [user, navigate])
 
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     if (!newEntry.trim()) {
       toast.warning('Please write something before saving')
       return
     }
 
-    const entry = {
-      id: Date.now(),
-      content: newEntry,
-      date: new Date().toISOString(),
-      mood: 'neutral'
-    }
+    try {
+      const entry = await saveJournalEntry({
+        content: newEntry,
+        title: '',
+        mood: 'neutral',
+        tags: []
+      })
 
-    const updatedEntries = [entry, ...entries]
-    setEntries(updatedEntries)
-    localStorage.setItem(`journal_${user.id}`, JSON.stringify(updatedEntries))
-    setNewEntry('')
-    toast.success('Journal entry saved!')
+      setEntries([entry, ...entries])
+      setNewEntry('')
+      toast.success('Journal entry saved!')
+    } catch (error) {
+      console.error('Failed to save entry:', error)
+      toast.error('Failed to save entry')
+    }
   }
 
   const filteredEntries = entries.filter(entry =>

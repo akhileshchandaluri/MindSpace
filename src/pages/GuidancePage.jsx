@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import { Heart, Target, CheckCircle, ArrowRight, Sparkles } from 'lucide-react'
+import { saveGoal, getGoals, updateGoal } from '../lib/database'
 
 export default function GuidancePage({ user }) {
   const navigate = useNavigate()
@@ -15,10 +16,17 @@ export default function GuidancePage({ user }) {
       return
     }
 
-    const savedGoals = localStorage.getItem(`goals_${user.id}`)
-    if (savedGoals) {
-      setSelectedGoals(JSON.parse(savedGoals))
+    const loadGoals = async () => {
+      try {
+        const data = await getGoals()
+        const completedGoals = data.filter(g => g.completed).map(g => g.title)
+        setSelectedGoals(completedGoals)
+      } catch (error) {
+        console.error('Failed to load goals:', error)
+      }
     }
+
+    loadGoals()
   }, [user, navigate])
 
   const copingStrategies = [
@@ -60,20 +68,31 @@ export default function GuidancePage({ user }) {
     'Try one new coping strategy'
   ]
 
-  const toggleGoal = (goal) => {
-    const updated = selectedGoals.includes(goal)
-      ? selectedGoals.filter(g => g !== goal)
-      : [...selectedGoals, goal]
-    setSelectedGoals(updated)
+  const toggleGoal = async (goal) => {
+    const isCompleted = selectedGoals.includes(goal)
     
-    if (!selectedGoals.includes(goal)) {
-      toast.success('Goal added! Keep going!')
+    try {
+      if (!isCompleted) {
+        await saveGoal({
+          title: goal,
+          description: '',
+          category: 'weekly',
+          targetDate: null
+        })
+        await updateGoal(null, { completed: true })
+        setSelectedGoals([...selectedGoals, goal])
+        toast.success('Goal added! Keep going!')
+      } else {
+        setSelectedGoals(selectedGoals.filter(g => g !== goal))
+      }
+      
+      if (!isCompleted && selectedGoals.length + 1 === weeklyGoals.length) {
+        toast.success('🎉 All goals completed! Amazing work!')
+      }
+    } catch (error) {
+      console.error('Failed to toggle goal:', error)
+      toast.error('Failed to update goal')
     }
-    
-    if (updated.length === weeklyGoals.length) {
-      toast.success('🎉 All goals completed! Amazing work!')
-    }
-    localStorage.setItem(`goals_${user.id}`, JSON.stringify(updated))
   }
 
   if (!user) return null

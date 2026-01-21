@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, Download, Trash2, Save } from 'lucide-react'
 import { useToast } from '../components/Toast'
+import { getMoods, getJournalEntries, getChatMessages, clearChatHistory, deleteJournalEntry } from '../lib/database'
+import { supabase } from '../lib/supabase'
 
 export default function ProfilePage({ user, onUpdateUser }) {
   const navigate = useNavigate()
@@ -36,47 +38,45 @@ export default function ProfilePage({ user, onUpdateUser }) {
     toast.success('Profile updated successfully!')
   }
 
-  const handleExportData = () => {
-    const data = {
-      moodHistory: [],
-      journalEntries: [],
-      chatHistory: []
+  const handleExportData = async () => {
+    try {
+      const data = {
+        moodHistory: await getMoods(),
+        journalEntries: await getJournalEntries(),
+        chatHistory: await getChatMessages(user.id)
+      }
+
+      // Download as JSON
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `mindspace-data-${Date.now()}.json`
+      a.click()
+      
+      toast.success('Data exported successfully!')
+    } catch (error) {
+      console.error('Failed to export data:', error)
+      toast.error('Failed to export data')
     }
-
-    // Collect all user data
-    for (let i = 0; i < 30; i++) {
-      const mood = localStorage.getItem(`mood_day_${user.id}_${i}`)
-      if (mood) data.moodHistory.push(JSON.parse(mood))
-    }
-
-    const journal = localStorage.getItem(`journal_${user.id}`)
-    if (journal) data.journalEntries = JSON.parse(journal)
-
-    const chat = localStorage.getItem(`chat_${user.id}`)
-    if (chat) data.chatHistory = JSON.parse(chat)
-
-    // Download as JSON
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `mindspace-data-${Date.now()}.json`
-    a.click()
-    
-    toast.success('Data exported successfully!')
   }
 
-  const handleDeleteData = () => {
+  const handleDeleteData = async () => {
     if (window.confirm('Are you sure? This will delete ALL your data permanently!')) {
-      // Delete all user data
-      const keys = Object.keys(localStorage)
-      keys.forEach(key => {
-        if (key.includes(user.id)) {
-          localStorage.removeItem(key)
+      try {
+        // Delete from Supabase - CASCADE will handle related data
+        await clearChatHistory()
+        const journals = await getJournalEntries()
+        for (const journal of journals) {
+          await deleteJournalEntry(journal.id)
         }
-      })
-      toast.success('All data deleted')
-      setTimeout(() => navigate('/'), 1000)
+        
+        toast.success('All data deleted')
+        setTimeout(() => navigate('/'), 1000)
+      } catch (error) {
+        console.error('Failed to delete data:', error)
+        toast.error('Failed to delete data')
+      }
     }
   }
 

@@ -15,20 +15,20 @@ export default function MoodCalendar({ user }) {
       return
     }
 
-    // Load all mood data
-    const data = {}
-    for (let i = 0; i < 60; i++) {
-      const saved = localStorage.getItem(`mood_day_${user.id}_${i}`)
-      if (saved) {
-        try {
-          const mood = JSON.parse(saved)
+    const loadMoodData = async () => {
+      try {
+        const moods = await getMoods()
+        const data = {}
+        moods.forEach(mood => {
           data[mood.date] = mood
-        } catch (e) {
-          console.error('Failed to parse mood data:', e)
-        }
+        })
+        setMoodData(data)
+      } catch (error) {
+        console.error('Failed to load mood data:', error)
       }
     }
-    setMoodData(data)
+
+    loadMoodData()
   }, [user, navigate])
 
   if (!user) return null
