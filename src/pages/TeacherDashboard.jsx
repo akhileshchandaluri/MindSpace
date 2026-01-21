@@ -3,10 +3,12 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Users, TrendingUp, Activity, AlertCircle, Shield } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 export default function TeacherDashboard({ user }) {
   const navigate = useNavigate()
   const [classData, setClassData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) {
@@ -19,89 +21,139 @@ export default function TeacherDashboard({ user }) {
       return
     }
 
-    // Aggregate real data from all student users
-    const allUsers = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key.startsWith('user_') && !key.includes('teacher')) {
-        try {
-          const userData = JSON.parse(localStorage.getItem(key))
-          if (userData.role !== 'teacher') {
-            allUsers.push(userData)
-          }
-        } catch (e) {
-          console.error('Failed to parse user data:', e)
+    // Load all students and their mood data from Supabase
+    const loadClassData = async () => {
+      try {
+        // Get all students
+        const { data: students, error: studentsError } = await supabase
+          .from('users')
+          .select('id, email, created_at')
+          .eq('role', 'student')
+
+        if (studentsError) throw studentsError
+
+        console.log('Students loaded:', students)
+
+        if (!students || students.length === 0) {
+          setClassData({
+            totalStudents: 0,
+            avgMood: 'No Data',
+            avgStress: 0,
+            highStressCount: 0,
+            moodDistribution: [],
+            stressByDay: [],
+            isEmpty: true
+          })
+          setLoading(false)
+          return
         }
-      }
-    }
 
-    // Collect mood data from all students
-    const moodCounts = { great: 0, good: 0, okay: 0, low: 0, struggling: 0 }
-    let totalStress = 0
-    let stressCount = 0
-    let highStressCount = 0
-    const stressByDay = {}
+        // Get mood data for last 30 days
+        const daysAgo30 = new Date()
+        daysAgo30.setDate(daysAgo30.getDate() - 30)
+        const startDate = daysAgo30.toISOString().split('T')[0]
 
-    allUsers.forEach(student => {
-      for (let i = 0; i < 30; i++) {
-        const moodData = localStorage.getItem(`mood_day_${student.id}_${i}`)
-        if (moodData) {
-          try {
-            const { mood, stress, date } = JSON.parse(moodData)
-            if (mood) moodCounts[mood]++
-            if (stress !== undefined) {
-              totalStress += stress
-              stressCount++
-              if (stress >= 7) highStressCount++
-              
-              const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'short' })
-              if (!stressByDay[dayOfWeek]) {
-                stressByDay[dayOfWeek] = { total: 0, count: 0 }
-              }
-              stressByDay[dayOfWeek].total += stress
-              stressByDay[dayOfWeek].count++
+        const { data: moods, error: moodsError } = await supabase
+          .from('moods')
+          .select('*')
+          .gte('date', startDate)
+
+        if (moodsError) throw moodsError
+
+        console.log('Moods loaded:', moods)
+
+        // Calculate aggregated statistics
+        const moodCounts = { great: 0, good: 0, okay: 0, low: 0, struggling: 0 }
+        let totalStress = 0
+        let stressCount = 0
+        let highStressCount = 0
+        const stressByDay = {}
+
+        moods?.forEach(entry => {
+          if (entry.mood) moodCounts[entry.mood]++
+          if (entry.stress_level !== undefined) {
+            totalStress += entry.stress_level
+            stressCount++
+            if (entry.stress_level >= 7) highStressCount++
+            
+            const dayOfWeek = new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short' })
+            if (!stressByDay[dayOfWeek]) {
+              stressByDay[dayOfWeek] = { total: 0, count: 0 }
             }
-          } catch (e) {
-            console.error('Failed to parse mood data:', e)
+            stressByDay[dayOfWeek].total += entry.stress_level
+            stressByDay[dayOfWeek].count++
           }
+        })
+
+        // Calculate averages
+        const avgStress = stressCount > 0 ? (totalStress / stressCount) : 0
+        const dominantMood = Object.entries(moodCounts)
+          .sort((a, b) => b[1] - a[1])[0]?.[0] || 'good'
+
+        const moodLabels = {
+          great: 'Great',
+          good: 'Good',
+          okay: 'Okay',
+          low: 'Low',
+          struggling: 'Struggling'
         }
+
+        const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        const weeklyTrend = weekDays.map(day => ({
+          day,
+          avgStress: stressByDay[day] 
+            ? (stressByDay[day].total / stressByDay[day].count).toFixed(1)
+            : 0
+        }))
+
+        setClassData({
+          totalStudents: students.length,
+          avgMood: moodLabels[dominantMood],
+          avgStress: avgStress.toFixed(1),
+          highStressCount,
+          moodDistribution: [
+            { mood: 'Great', count: moodCounts.great },
+            { mood: 'Good', count: moodCounts.good },
+            { mood: 'Okay', count: moodCounts.okay },
+            { mood: 'Low', count: moodCounts.low },
+            { mood: 'Struggling', count: moodCounts.struggling }
+          ],
+          weeklyTrend,
+          isEmpty: false
+        })
+      } catch (error) {
+        console.error('Error loading class data:', error)
+        setClassData({
+          totalStudents: 0,
+          avgMood: 'No Data',
+          avgStress: 0,
+          highStressCount: 0,
+          moodDistribution: [],
+          stressByDay: [],
+          isEmpty: true
+        })
+      } finally {
+        setLoading(false)
       }
-    })
-
-    // Calculate averages
-    const avgStress = stressCount > 0 ? (totalStress / stressCount) : 0
-    const dominantMood = Object.entries(moodCounts)
-      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'good'
-
-    const moodLabels = {
-      great: 'Great',
-      good: 'Good',
-      okay: 'Okay',
-      low: 'Low',
-      struggling: 'Struggling'
     }
 
-    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    const weeklyTrend = weekDays.map(day => ({
-      day,
-      avgStress: stressByDay[day] 
-        ? (stressByDay[day].total / stressByDay[day].count).toFixed(1)
-        : 0
-    }))
+    loadClassData()
+  }, [user, navigate])
 
-    const aggregatedData = {
-      totalStudents: allUsers.length,
-      averageMood: moodLabels[dominantMood],
-      averageStress: avgStress.toFixed(1),
-      highStressCount,
-      moodDistribution: [
-        { mood: 'Great', count: moodCounts.great },
-        { mood: 'Good', count: moodCounts.good },
-        { mood: 'Okay', count: moodCounts.okay },
-        { mood: 'Low', count: moodCounts.low },
-        { mood: 'Struggling', count: moodCounts.struggling }
-      ],
-      weeklyTrend
+  if (!user || loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!classData) return null
+
+  if (classData.isEmpty) {
     }
 
     setClassData(aggregatedData)
