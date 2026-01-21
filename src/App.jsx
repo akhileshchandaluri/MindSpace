@@ -25,10 +25,52 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for existing Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing Supabase session with timeout
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          // Try to get role, but don't block on it
+          try {
+            const role = await Promise.race([
+              getUserRole(session.user.id),
+              new Promise((resolve) => setTimeout(() => resolve('student'), 3000))
+            ])
+            
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              role: role || 'student',
+              isAnonymous: false,
+              createdAt: Date.now()
+            })
+          } catch (err) {
+            console.error('Error getting user role:', err)
+            // Set user anyway with default role
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'student',
+              isAnonymous: false,
+              createdAt: Date.now()
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Error getting session:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        getUserRole(session.user.id).then(role => {
+        try {
+          const role = await getUserRole(session.user.id)
           setUser({
             id: session.user.id,
             email: session.user.email,
@@ -36,30 +78,16 @@ function App() {
             isAnonymous: false,
             createdAt: Date.now()
           })
-          setLoading(false)
-        }).catch(err => {
-          console.error('Error getting user role:', err)
-          setLoading(false)
-        })
-      } else {
-        setLoading(false)
-      }
-    }).catch(err => {
-      console.error('Error getting session:', err)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const role = await getUserRole(session.user.id)
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          role: role || 'student',
-          isAnonymous: false,
-          createdAt: Date.now()
-        })
+        } catch (err) {
+          console.error('Auth state change error:', err)
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'student',
+            isAnonymous: false,
+            createdAt: Date.now()
+          })
+        }
       } else {
         setUser(null)
       }
