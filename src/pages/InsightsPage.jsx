@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Activity, Calendar, AlertCircle } from 'lucide-react'
+import { getMoods } from '../lib/database'
 
 export default function InsightsPage({ user }) {
   const navigate = useNavigate()
@@ -14,26 +15,24 @@ export default function InsightsPage({ user }) {
       return
     }
 
-    // Load real user mood data
-    const moodHistory = []
-    for (let i = 0; i < 30; i++) {
-      const saved = localStorage.getItem(`mood_day_${user.id}_${i}`)
-      if (saved) {
-        moodHistory.push(JSON.parse(saved))
-      }
-    }
+    // Load mood data from Supabase
+    const loadInsights = async () => {
+      try {
+        const daysAgo30 = new Date()
+        daysAgo30.setDate(daysAgo30.getDate() - 30)
+        const startDate = daysAgo30.toISOString().split('T')[0]
+        
+        const moodHistory = await getMoods(startDate, null) || []
 
-    if (moodHistory.length === 0) {
-      setInsights({
-        moodDistribution: [],
-        stressTrend: [],
-        stressSources: [],
-        isEmpty: true
-      })
-      return
-    }
-
-    // Calculate mood distribution
+        if (moodHistory.length === 0) {
+          setInsights({
+            moodDistribution: [],
+            stressTrend: [],
+            stressSources: [],
+            isEmpty: true
+          })
+          return
+        }    // Calculate mood distribution
     const moodCounts = {}
     const moodColors = {
       'great': '#10b981',
@@ -58,26 +57,33 @@ export default function InsightsPage({ user }) {
     const stressTrend = []
     const today = new Date().getDay()
     
-    for (let i = 6; i >= 0; i--) {
-      const dayIndex = (today - i + 7) % 7
-      const dayData = moodHistory.filter((_, idx) => idx >= moodHistory.length - 7 + (6 - i))[0]
-      stressTrend.push({
-        day: days[dayIndex],
-        stress: dayData?.stress || 0
-      })
+        for (let i = 6; i >= 0; i--) {
+          const dayIndex = (today - i + 7) % 7
+          const dayData = moodHistory.filter((_, idx) => idx >= moodHistory.length - 7 + (6 - i))[0]
+          stressTrend.push({
+            day: days[dayIndex],
+            stress: dayData?.stress_level || dayData?.stress || 0
+          })
+        }
+
+        // Mock stress sources (this would need chat analysis in production)
+        const stressSources = [
+          { source: 'Not enough data', count: 1 }
+        ]
+
+        setInsights({
+          moodDistribution,
+          stressTrend,
+          stressSources,
+          isEmpty: false
+        })
+      } catch (error) {
+        console.error('Error loading insights:', error)
+        setInsights({ isEmpty: true, moodDistribution: [], stressTrend: [], stressSources: [] })
+      }
     }
 
-    // Mock stress sources (this would need chat analysis in production)
-    const stressSources = [
-      { source: 'Not enough data', count: 1 }
-    ]
-
-    setInsights({
-      moodDistribution,
-      stressTrend,
-      stressSources,
-      isEmpty: false
-    })
+    loadInsights()
   }, [user, navigate])
 
   if (!user || !insights) return null

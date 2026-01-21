@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
 import { Calendar, TrendingUp, Smile, Meh, Frown, Activity } from 'lucide-react'
+import { getMoods } from '../lib/database'
 
 export default function MoodTrackingPage({ user }) {
   const navigate = useNavigate()
@@ -14,19 +15,22 @@ export default function MoodTrackingPage({ user }) {
       return
     }
 
-    // Load real mood history from localStorage
-    const history = []
-    for (let i = 0; i < 30; i++) {
-      const saved = localStorage.getItem(`mood_day_${user.id}_${i}`)
-      if (saved) {
-        try {
-          history.push(JSON.parse(saved))
-        } catch (e) {
-          console.error('Failed to parse mood data:', e)
-        }
+    // Load mood history from Supabase
+    const loadMoodHistory = async () => {
+      try {
+        const daysAgo30 = new Date()
+        daysAgo30.setDate(daysAgo30.getDate() - 30)
+        const startDate = daysAgo30.toISOString().split('T')[0]
+        
+        const moods = await getMoods(startDate, null)
+        setMoodHistory(moods || [])
+      } catch (error) {
+        console.error('Error loading mood history:', error)
+        setMoodHistory([])
       }
     }
-    setMoodHistory(history.reverse())
+
+    loadMoodHistory()
   }, [user, navigate])
 
   if (!user) return null
@@ -141,7 +145,7 @@ export default function MoodTrackingPage({ user }) {
             <div className="space-y-3">
             {moodHistory.slice(0, selectedPeriod === 'week' ? 7 : 14).map((entry, index) => (
               <motion.div
-                key={entry.date}
+                key={entry.id || entry.date}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -152,7 +156,7 @@ export default function MoodTrackingPage({ user }) {
                   <div>
                     <p className="font-medium text-gray-900 capitalize">{entry.mood}</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(entry.date).toLocaleDateString('en-US', { 
+                      {new Date(entry.date || entry.created_at).toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         month: 'short', 
                         day: 'numeric' 
@@ -163,7 +167,7 @@ export default function MoodTrackingPage({ user }) {
                 <div className="flex items-center space-x-3">
                   <Activity className="w-5 h-5 text-gray-500" />
                   <span className="text-sm font-medium text-gray-700">
-                    Stress: {entry.stress}/10
+                    Stress: {entry.stress_level || entry.stress}/10
                   </span>
                 </div>
               </motion.div>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { Calendar as CalendarIcon, Smile, Meh, Frown } from 'lucide-react'
-
+import { Calendar as CalendarIcon, Smile, Meh, Frown } from 'lucide-react'import { getMoods } from '../lib/database'
 export default function MoodCalendar({ user }) {
   const navigate = useNavigate()
   const [moodData, setMoodData] = useState({})
