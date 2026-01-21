@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import OnboardingModal from '../components/OnboardingModal'
+import { saveMood, getMoods } from '../lib/database'
 import { 
   MessageCircle, TrendingUp, BookOpen, Heart, 
   Smile, Meh, Frown, Activity, ArrowRight 
@@ -21,13 +22,22 @@ export default function StudentDashboard({ user }) {
       return
     }
 
-    // Load mood data from localStorage
-    const savedMood = localStorage.getItem(`mood_${user.id}`)
-    if (savedMood) {
-      const moodData = JSON.parse(savedMood)
-      setCurrentMood(moodData.mood)
-      setStressLevel(moodData.stress)
+    // Load today's mood from Supabase
+    const loadTodayMood = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0]
+        const moods = await getMoods(today, today)
+        if (moods && moods.length > 0) {
+          const latestMood = moods[0]
+          setCurrentMood(latestMood.mood)
+          setStressLevel(latestMood.stress_level || 5)
+        }
+      } catch (error) {
+        console.error('Error loading mood:', error)
+      }
     }
+
+    loadTodayMood()
   }, [user, navigate])
 
   if (!user) return null
@@ -76,27 +86,29 @@ export default function StudentDashboard({ user }) {
     setShowStressSlider(true)
   }
 
-  const handleSaveMoodAndStress = () => {
-    const now = new Date()
-    const dateKey = now.toISOString().split('T')[0]
-    const moodData = {
-      mood: currentMood,
-      stress: stressLevel,
-      timestamp: Date.now(),
-      date: dateKey
+  const handleSaveMoodAndStress = async () => {
+    try {
+      const now = new Date()
+      const dateKey = now.toISOString().split('T')[0]
+      
+      const moodData = {
+        mood: currentMood,
+        stressLevel: stressLevel,
+        energyLevel: 5, // Default value
+        note: '',
+        activities: [],
+        date: dateKey
+      }
+      
+      // Save to Supabase
+      await saveMood(moodData)
+      
+      toast.success('Mood and stress level saved!')
+      setShowStressSlider(false)
+    } catch (error) {
+      console.error('Error saving mood:', error)
+      toast.error('Failed to save mood. Please try again.')
     }
-    
-    // Save current mood
-    localStorage.setItem(`mood_${user.id}`, JSON.stringify(moodData))
-    
-    // Save to history with day index
-    const dayIndex = Math.floor((Date.now() - (user.createdAt || Date.now())) / (1000 * 60 * 60 * 24))
-    localStorage.setItem(`mood_day_${user.id}_${dayIndex}`, JSON.stringify(moodData))
-    
-    toast.success('Mood and stress level saved!')
-    setShowStressSlider(false)
-    
-    setCurrentMood(mood.value)
   }
 
   return (
