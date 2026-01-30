@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import { BookOpen, Plus, Calendar, Lock, Search } from 'lucide-react'
-import { saveJournalEntry, getJournalEntries, deleteJournalEntry } from '../lib/database'
+import { saveSecureJournalEntry, getSecureJournalEntries } from '../lib/secureDatabase'
 
 export default function JournalPage({ user }) {
   const navigate = useNavigate()
@@ -29,7 +29,7 @@ export default function JournalPage({ user }) {
 
     const loadEntries = async () => {
       try {
-        const data = await getJournalEntries()
+        const data = await getSecureJournalEntries()
         setEntries(data)
       } catch (error) {
         console.error('Failed to load journal entries:', error)
@@ -47,7 +47,7 @@ export default function JournalPage({ user }) {
     }
 
     try {
-      const entry = await saveJournalEntry({
+      const entry = await saveSecureJournalEntry({
         content: newEntry,
         title: '',
         mood: 'neutral',

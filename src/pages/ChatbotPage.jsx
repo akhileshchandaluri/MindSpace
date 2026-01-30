@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
-import { Send, Bot, User, AlertCircle, Heart } from 'lucide-react'
-import { generateAIResponse, detectCrisis, detectEmotion } from '../lib/aiService'
-import { saveChatMessage, getChatMessages } from '../lib/database'
+import { Send, Bot, User, AlertCircle, Heart, Shield, Info } from 'lucide-react'
+import { getSafeChatResponse } from '../lib/safeChatbot'
+import { detectEmotion } from '../lib/aiService'
+import { saveSecureChatMessage, getSecureChatMessages } from '../lib/secureDatabase'
+import DisclaimerBanner, { InlineDisclaimer, ConfidenceIndicator } from '../components/DisclaimerBanner'
 
 export default function ChatbotPage({ user }) {
   const navigate = useNavigate()
@@ -14,6 +16,7 @@ export default function ChatbotPage({ user }) {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef(null)
   const [showCrisisWarning, setShowCrisisWarning] = useState(false)
+  const [showSafetyInfo, setShowSafetyInfo] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -31,7 +34,7 @@ export default function ChatbotPage({ user }) {
         }
         
         console.log('Loading chat messages for user:', user.id)
-        const chatHistory = await getChatMessages(user.id)
+        const chatHistory = await getSecureChatMessages(user.id)
         console.log('Chat history loaded:', chatHistory)
         
         if (chatHistory && chatHistory.length > 0) {
@@ -67,7 +70,7 @@ export default function ChatbotPage({ user }) {
         timestamp: Date.now()
       }
       setMessages([welcomeMsg])
-      await saveChatMessage(user.id, welcomeMsg.content, 'bot')
+      await saveSecureChatMessage(user.id, welcomeMsg.content, 'bot')
       console.log('Welcome message set')
     } catch (error) {
       console.error('Error setting welcome message:', error)
@@ -110,36 +113,58 @@ export default function ChatbotPage({ user }) {
     setInput('')
     setIsTyping(true)
 
-    // Save user message to database
-    await saveChatMessage(user.id, userInput, 'user')
-
-    // Check for crisis keywords
-    if (detectCrisis(userInput)) {
-      setShowCrisisWarning(true)
+    try {
+      await saveSecureChatMessage(user.id, userInput, 'user')
+    } catch (error) {
+      console.error('Failed to save user message:', error)
     }
 
     try {
-      // Get AI response with conversation history
-      const aiResponse = await generateAIResponse(userInput, messages.slice(-10))
+      // Get SAFE AI response with multi-layer protection
+      const safeResponse = await getSafeChatResponse(userInput, messages.slice(-10))
+      
+      // Show crisis warning if critical/high crisis detected
+      if (safeResponse.crisisLevel === 'CRITICAL' || safeResponse.crisisLevel === 'HIGH') {
+        setShowCrisisWarning(true)
+      }
       
       const botMessage = {
         id: Date.now() + 1,
         type: 'bot',
-        content: aiResponse,
-        timestamp: Date.now()
+        content: safeResponse.response,
+        timestamp: Date.now(),
+        metadata: {
+          confidence: safeResponse.confidence,
+          aiGenerated: safeResponse.aiGenerated,
+          responseType: safeResponse.type,
+          crisisLevel: safeResponse.crisisLevel,
+          validationWarnings: safeResponse.validationWarnings || [],
+          processingTime: safeResponse.processingTime
+        }
       }
 
       const updatedMessages = [...newMessages, botMessage]
       setMessages(updatedMessages)
       
       // Save bot response to database
-      await saveChatMessage(user.id, aiResponse, 'bot')
+      try {
+        await saveSecureChatMessage(user.id, safeResponse.response, 'bot')
+      } catch (error) {
+        console.error('Failed to save bot message:', error)
+      }
       
       setIsTyping(false)
 
       // Detect emotion and update mood
       const { emotion, stressLevel } = detectEmotion(userInput)
-      toast.success(`Mood detected: ${emotion}`)
+      if (emotion !== 'neutral') {
+        toast.info(`Emotion detected: ${emotion}`)
+      }
+
+      // Show warning for low confidence responses
+      if (safeResponse.confidence < 70 && safeResponse.aiGenerated) {
+        toast.warning('Response generated with lower confidence. Consider consulting a counselor.')
+      }
       
     } catch (error) {
       console.error('Error generating response:', error)
@@ -159,6 +184,9 @@ export default function ChatbotPage({ user }) {
 
   return (
     <div className="h-screen flex flex-col bg-white">
+      {/* Disclaimer Banner */}
+      <DisclaimerBanner type="chat" />
+      
       {/* Crisis Warning Modal */}
       <AnimatePresence>
         {showCrisisWarning && (
@@ -205,12 +233,41 @@ export default function ChatbotPage({ user }) {
               <Bot className="w-6 h-6 text-primary-500" />
             </div>
             <div>
-              <h1 className="text-lg font-medium text-gray-900">MindSpace</h1>
-              <p className="text-sm text-gray-500">Your emotional wellbeing companion</p>
+              <h1 className="text-lg font-medium text-gray-900">MindSpace AI</h1>
+              <p className="text-sm text-gray-500">Multi-layer safety system active</p>
             </div>
           </div>
-          <Heart className="w-6 h-6 text-primary-500" />
+          <button
+            onClick={() => setShowSafetyInfo(!showSafetyInfo)}
+            className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            <Shield className="w-4 h-4" />
+            <span className="text-sm font-medium">Safety Info</span>
+          </button>
         </div>
+        
+        {/* Safety Info Panel */}
+        {showSafetyInfo && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="max-w-4xl mx-auto mt-4 p-4 bg-green-50 border border-green-200 rounded-lg"
+          >
+            <h3 className="font-medium text-green-900 mb-2 flex items-center space-x-2">
+              <Shield className="w-4 h-4" />
+              <span>Active Safety Systems</span>
+            </h3>
+            <ul className="text-sm text-green-800 space-y-1">
+              <li>✓ Crisis detection (rule-based, 100% accurate)</li>
+              <li>✓ Template protocols for critical situations (no AI)</li>
+              <li>✓ Constitutional AI (self-critique)</li>
+              <li>✓ Multi-layer validation (blocks unsafe content)</li>
+              <li>✓ Response confidence scoring</li>
+              <li>✓ Audit logging for transparency</li>
+            </ul>
+          </motion.div>
+        )}
       </div>
 
       {/* Messages */}
@@ -237,12 +294,22 @@ export default function ChatbotPage({ user }) {
                       <Bot className="w-5 h-5 text-primary-500" />
                     )}
                   </div>
-                  <div className={`rounded-2xl px-5 py-3 ${
-                    message.type === 'user'
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-gray-50 text-gray-900'
-                  }`}>
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <div className="space-y-2">
+                    <div className={`rounded-2xl px-5 py-3 ${
+                      message.type === 'user'
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-gray-50 text-gray-900'
+                    }`}>
+                      <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    </div>
+                    {/* Show confidence indicator for bot messages */}
+                    {message.type === 'bot' && message.metadata && (
+                      <ConfidenceIndicator 
+                        confidence={message.metadata.confidence}
+                        responseType={message.metadata.responseType}
+                        aiGenerated={message.metadata.aiGenerated}
+                      />
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -279,8 +346,16 @@ export default function ChatbotPage({ user }) {
               </div>
             </motion.div>
           )}
+          
           <div ref={messagesEndRef} />
         </div>
+        
+        {/* Show inline disclaimer periodically */}
+        {messages.length > 0 && messages.length % 5 === 0 && (
+          <div className="max-w-4xl mx-auto mt-4">
+            <InlineDisclaimer />
+          </div>
+        )}
       </div>
 
       {/* Input */}
@@ -306,6 +381,20 @@ export default function ChatbotPage({ user }) {
               <Send className="w-5 h-5" />
             </button>
           </div>
+
+      {/* Enhanced Disclaimer */}
+      <div className="bg-yellow-50 border-t-2 border-yellow-200 px-6 py-3">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-yellow-900">
+              <strong>AI Safety Notice:</strong> This chat uses AI with multi-layer safety systems. 
+              Critical situations use expert-written protocols (not AI). AI responses may occasionally 
+              be imperfect - always verify with a counselor. In crisis: <strong>KIRAN 1800-599-0019</strong> or <strong>Emergency 112</strong>
+            </p>
+          </div>
+        </div>
+      </div>
           <p className="text-xs text-gray-500 mt-2 text-center">
             This is not therapy or medical advice. For emergencies, call 1800-599-0019 or 112.
           </p>

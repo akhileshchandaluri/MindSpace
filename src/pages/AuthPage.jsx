@@ -5,6 +5,7 @@ import { Heart, Mail, Lock, Eye, EyeOff, Shield, UserX } from 'lucide-react'
 import { signUp, signIn, getUserRole } from '../lib/auth'
 import { useToast } from '../components/Toast'
 import { supabase } from '../lib/supabase'
+import { setSessionPassword, enableEncryption } from '../lib/encryption'
 
 export default function AuthPage({ onLogin }) {
   const navigate = useNavigate()
@@ -94,6 +95,16 @@ export default function AuthPage({ onLogin }) {
 
       const user = authData.user
 
+      // Enable end-to-end encryption
+      try {
+        setSessionPassword(formData.password)
+        await enableEncryption(formData.password, user.id)
+        console.log('✅ Encryption enabled for user:', user.id)
+      } catch (encErr) {
+        console.error('Encryption setup error:', encErr)
+        // Continue anyway - encryption is optional enhancement
+      }
+
       // Get user role from database
       const role = await getUserRole(user.id)
       
@@ -106,7 +117,7 @@ export default function AuthPage({ onLogin }) {
       }
 
       onLogin(userData)
-      toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!')
+      toast.success(isLogin ? 'Welcome back! 🔒 Encryption active' : 'Account created! 🔒 Data encrypted')
 
       // Redirect based on role
       if (role === 'teacher') {

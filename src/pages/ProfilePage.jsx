@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, Download, Trash2, Save } from 'lucide-react'
 import { useToast } from '../components/Toast'
-import { getMoods, getJournalEntries, getChatMessages, clearChatHistory, deleteJournalEntry } from '../lib/database'
+import { getAllUserData, exportUserData, deleteAllUserData } from '../lib/secureDatabase'
 import { supabase } from '../lib/supabase'
 
 export default function ProfilePage({ user, onUpdateUser }) {
@@ -40,14 +40,8 @@ export default function ProfilePage({ user, onUpdateUser }) {
 
   const handleExportData = async () => {
     try {
-      const data = {
-        moodHistory: await getMoods(),
-        journalEntries: await getJournalEntries(),
-        chatHistory: await getChatMessages(user.id)
-      }
-
-      // Download as JSON
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      await exportUserData()
+      toast.success('Data exported successfully!')
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -64,13 +58,7 @@ export default function ProfilePage({ user, onUpdateUser }) {
   const handleDeleteData = async () => {
     if (window.confirm('Are you sure? This will delete ALL your data permanently!')) {
       try {
-        // Delete from Supabase - CASCADE will handle related data
-        await clearChatHistory()
-        const journals = await getJournalEntries()
-        for (const journal of journals) {
-          await deleteJournalEntry(journal.id)
-        }
-        
+        await deleteAllUserData()
         toast.success('All data deleted')
         setTimeout(() => navigate('/'), 1000)
       } catch (error) {

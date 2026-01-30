@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Activity, Calendar, AlertCircle } from 'lucide-react'
-import { getMoods } from '../lib/database'
+import { getSecureMoods } from '../lib/secureDatabase'
 
 export default function InsightsPage({ user }) {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export default function InsightsPage({ user }) {
         daysAgo30.setDate(daysAgo30.getDate() - 30)
         const startDate = daysAgo30.toISOString().split('T')[0]
         
-        const moodHistory = await getMoods(startDate, null) || []
+        const moodHistory = await getSecureMoods(startDate, null) || []
 
         if (moodHistory.length === 0) {
           setInsights({

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import OnboardingModal from '../components/OnboardingModal'
-import { saveMood, getMoods } from '../lib/database'
+import { saveSecureMood, getSecureMoods } from '../lib/secureDatabase'
 import { 
   MessageCircle, TrendingUp, BookOpen, Heart, 
   Smile, Meh, Frown, Activity, ArrowRight 
@@ -26,7 +26,7 @@ export default function StudentDashboard({ user }) {
     const loadTodayMood = async () => {
       try {
         const today = new Date().toISOString().split('T')[0]
-        const moods = await getMoods(today, today)
+        const moods = await getSecureMoods(today, today)
         if (moods && moods.length > 0) {
           const latestMood = moods[0]
           setCurrentMood(latestMood.mood)
@@ -100,10 +100,10 @@ export default function StudentDashboard({ user }) {
         date: dateKey
       }
       
-      // Save to Supabase
-      await saveMood(moodData)
+      // Save to Supabase (encrypted)
+      await saveSecureMood(moodData)
       
-      toast.success('Mood and stress level saved!')
+      toast.success('Mood and stress level saved! 🔒')
       setShowStressSlider(false)
     } catch (error) {
       console.error('Error saving mood:', error)

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate, Link } from 'react-router-dom'
 import { Calendar, TrendingUp, Smile, Meh, Frown, Activity } from 'lucide-react'
-import { getMoods } from '../lib/database'
+import { getSecureMoods } from '../lib/secureDatabase'
 
 export default function MoodTrackingPage({ user }) {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export default function MoodTrackingPage({ user }) {
         daysAgo30.setDate(daysAgo30.getDate() - 30)
         const startDate = daysAgo30.toISOString().split('T')[0]
         
-        const moods = await getMoods(startDate, null)
+        const moods = await getSecureMoods(startDate, null)
         setMoodHistory(moods || [])
       } catch (error) {
         console.error('Error loading mood history:', error)

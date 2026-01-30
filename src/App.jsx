@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Navigation from './components/Navigation'
 import { ToastProvider } from './components/Toast'
+import DisclaimerBanner from './components/DisclaimerBanner'
 import LandingPage from './pages/LandingPage'
 import AuthPage from './pages/AuthPage'
 import StudentDashboard from './pages/StudentDashboard'
@@ -17,6 +18,7 @@ import FeedbackPage from './pages/FeedbackPage'
 import AboutPage from './pages/AboutPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminPanel from './pages/AdminPanel'
+import PrivacyDashboard from './pages/PrivacyDashboard'
 import { supabase } from './lib/supabase'
 import { getUserRole } from './lib/auth'
 
@@ -131,6 +133,7 @@ function App() {
     <ToastProvider>
       <Router>
         <div className="min-h-screen bg-white">
+          {user && <DisclaimerBanner type="app" />}
           <Navigation user={user} onLogout={handleLogout} />
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -147,6 +150,7 @@ function App() {
             <Route path="/feedback" element={<FeedbackPage user={user} />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/profile" element={<ProfilePage user={user} onUpdateUser={handleUpdateUser} />} />
+            <Route path="/privacy" element={<PrivacyDashboard user={user} />} />
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </div>

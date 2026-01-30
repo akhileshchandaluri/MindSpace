@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Calendar as CalendarIcon, Smile, Meh, Frown } from 'lucide-react'
-import { getMoods } from '../lib/database'
+import { getSecureMoods } from '../lib/secureDatabase'
 
 export default function MoodCalendar({ user }) {
   const navigate = useNavigate()
@@ -17,7 +17,7 @@ export default function MoodCalendar({ user }) {
 
     const loadMoodData = async () => {
       try {
-        const moods = await getMoods()
+        const moods = await getSecureMoods()
         const data = {}
         moods.forEach(mood => {
           data[mood.date] = mood
