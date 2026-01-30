@@ -23,12 +23,11 @@ export const saveSecureMood = async (moodData) => {
   if (!user) throw new Error('User not authenticated')
 
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
-
-  // Encrypt sensitive fields
-  const encryptedNote = moodData.note 
+  
+  // Encrypt sensitive fields if password available
+  const encryptedNote = (password && moodData.note)
     ? await encryptData(moodData.note, password, user.id)
-    : null
+    : moodData.note
 
   const { data, error } = await supabase
     .from('moods')
@@ -38,10 +37,10 @@ export const saveSecureMood = async (moodData) => {
         mood: moodData.mood,
         stress_level: moodData.stressLevel,
         energy_level: moodData.energyLevel,
-        note: encryptedNote, // Encrypted
+        note: encryptedNote,
         activities: moodData.activities || [],
         date: moodData.date || new Date().toISOString().split('T')[0],
-        encrypted: true // Flag to indicate data is encrypted
+        encrypted: !!password // Flag to indicate data is encrypted
       }
     ])
     .select()
@@ -59,7 +58,6 @@ export const getSecureMoods = async (startDate = null, endDate = null) => {
   if (!user) throw new Error('User not authenticated')
 
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
 
   let query = supabase
     .from('moods')
@@ -74,14 +72,14 @@ export const getSecureMoods = async (startDate = null, endDate = null) => {
     query = query.lte('date', endDate)
   }
 
-  const { data, error } = query
+  const { data, error } = await query
 
   if (error) throw new Error(error.message)
 
-  // Decrypt notes
+  // Decrypt notes if password available
   const decryptedData = await Promise.all(
     data.map(async (mood) => {
-      if (mood.encrypted && mood.note) {
+      if (password && mood.encrypted && mood.note) {
         try {
           mood.note = await decryptData(mood.note, password, user.id)
         } catch (err) {
@@ -105,25 +103,26 @@ export const saveSecureJournalEntry = async (entryData) => {
   if (!user) throw new Error('User not authenticated')
 
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
 
-  // Encrypt content and title
-  const encryptedContent = await encryptData(entryData.content, password, user.id)
-  const encryptedTitle = entryData.title 
+  // Encrypt content and title if password available
+  const encryptedContent = password 
+    ? await encryptData(entryData.content, password, user.id)
+    : entryData.content
+  const encryptedTitle = (password && entryData.title)
     ? await encryptData(entryData.title, password, user.id)
-    : null
+    : entryData.title
 
   const { data, error } = await supabase
     .from('journal_entries')
     .insert([
       {
         user_id: user.id,
-        title: encryptedTitle, // Encrypted
-        content: encryptedContent, // Encrypted
+        title: encryptedTitle,
+        content: encryptedContent,
         mood: entryData.mood,
         tags: entryData.tags || [],
         date: entryData.date || new Date().toISOString().split('T')[0],
-        encrypted: true
+        encrypted: !!password
       }
     ])
     .select()
@@ -138,7 +137,6 @@ export const getSecureJournalEntries = async () => {
   if (!user) throw new Error('User not authenticated')
 
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
 
   const { data, error } = await supabase
     .from('journal_entries')
@@ -148,10 +146,10 @@ export const getSecureJournalEntries = async () => {
 
   if (error) throw new Error(error.message)
 
-  // Decrypt content and title
+  // Decrypt content and title if password available
   const decryptedData = await Promise.all(
     data.map(async (entry) => {
-      if (entry.encrypted) {
+      if (password && entry.encrypted) {
         try {
           if (entry.content) {
             entry.content = await decryptData(entry.content, password, user.id)
@@ -178,19 +176,20 @@ export const getSecureJournalEntries = async () => {
 
 export const saveSecureChatMessage = async (userId, content, sender) => {
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
 
-  // Encrypt message content
-  const encryptedContent = await encryptData(content, password, userId)
+  // Encrypt message content if password available
+  const encryptedContent = password
+    ? await encryptData(content, password, userId)
+    : content
 
   const { data, error } = await supabase
     .from('chat_messages')
     .insert([
       {
         user_id: userId,
-        content: encryptedContent, // Encrypted
+        content: encryptedContent,
         sender: sender,
-        encrypted: true
+        encrypted: !!password
       }
     ])
     .select()
@@ -202,7 +201,6 @@ export const saveSecureChatMessage = async (userId, content, sender) => {
 
 export const getSecureChatMessages = async (userId) => {
   const password = getSessionPassword()
-  if (!password) throw new Error('Encryption not initialized. Please log in again.')
 
   const { data, error } = await supabase
     .from('chat_messages')
@@ -212,10 +210,10 @@ export const getSecureChatMessages = async (userId) => {
 
   if (error) throw new Error(error.message)
 
-  // Decrypt messages
+  // Decrypt messages if password available
   const decryptedData = await Promise.all(
     data.map(async (message) => {
-      if (message.encrypted && message.content) {
+      if (password && message.encrypted && message.content) {
         try {
           message.content = await decryptData(message.content, password, userId)
         } catch (err) {

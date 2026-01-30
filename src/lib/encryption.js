@@ -178,21 +178,21 @@ export const decryptData = async (encryptedString, password, userId) => {
 }
 
 /**
- * Store encryption password in session (memory only, never persisted)
+ * Store encryption password in sessionStorage (persists during browser session)
  * This allows automatic encryption/decryption during session
+ * NOTE: sessionStorage is cleared when browser closes (more secure than localStorage)
  */
-let sessionPassword = null
 
 export const setSessionPassword = (password) => {
-  sessionPassword = password
+  sessionStorage.setItem('mindspace_session_key', password)
 }
 
 export const getSessionPassword = () => {
-  return sessionPassword
+  return sessionStorage.getItem('mindspace_session_key')
 }
 
 export const clearSessionPassword = () => {
-  sessionPassword = null
+  sessionStorage.removeItem('mindspace_session_key')
 }
 
 /**

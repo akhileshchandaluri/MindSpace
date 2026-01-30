@@ -21,6 +21,7 @@ import AdminPanel from './pages/AdminPanel'
 import PrivacyDashboard from './pages/PrivacyDashboard'
 import { supabase } from './lib/supabase'
 import { getUserRole } from './lib/auth'
+import { clearSessionPassword } from './lib/encryption'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -111,6 +112,7 @@ function App() {
     await supabase.auth.signOut()
     setUser(null)
     localStorage.removeItem('mindspace_user')
+    clearSessionPassword() // Clear encryption password
   }
 
   const handleUpdateUser = (userData) => {
