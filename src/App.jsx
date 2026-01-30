@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Navigation from './components/Navigation'
 import { ToastProvider } from './components/Toast'
 import DisclaimerBanner from './components/DisclaimerBanner'
+import PasswordPrompt from './components/PasswordPrompt'
 import LandingPage from './pages/LandingPage'
 import AuthPage from './pages/AuthPage'
 import StudentDashboard from './pages/StudentDashboard'
@@ -21,11 +22,12 @@ import AdminPanel from './pages/AdminPanel'
 import PrivacyDashboard from './pages/PrivacyDashboard'
 import { supabase } from './lib/supabase'
 import { getUserRole } from './lib/auth'
-import { clearSessionPassword } from './lib/encryption'
+import { clearSessionPassword, getSessionPassword } from './lib/encryption'
 
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false)
 
   useEffect(() => {
     // Force stop loading after 1.5 seconds no matter what
@@ -41,13 +43,21 @@ function App() {
         
         if (session?.user) {
           // Set user immediately with default role
-          setUser({
+          const userData = {
             id: session.user.id,
             email: session.user.email,
             role: 'student',
             isAnonymous: false,
             createdAt: Date.now()
-          })
+          }
+          setUser(userData)
+          
+          // Check if encryption password is available
+          const hasPassword = !!getSessionPassword()
+          if (!hasPassword && !session.user.isAnonymous) {
+            // Show password prompt to enable encryption
+            setShowPasswordPrompt(true)
+          }
           
           // Try to get actual role in background (don't block)
           getUserRole(session.user.id).then(role => {
@@ -136,6 +146,13 @@ function App() {
       <Router>
         <div className="min-h-screen bg-white">
           {user && <DisclaimerBanner type="app" />}
+          {showPasswordPrompt && user && !user.isAnonymous && (
+            <PasswordPrompt 
+              user={user} 
+              onPasswordSet={() => setShowPasswordPrompt(false)}
+              onSkip={() => setShowPasswordPrompt(false)}
+            />
+          )}
           <Navigation user={user} onLogout={handleLogout} />
           <Routes>
             <Route path="/" element={<LandingPage />} />
