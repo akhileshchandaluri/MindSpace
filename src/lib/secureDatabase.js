@@ -19,37 +19,54 @@ import { encryptData, decryptData, getSessionPassword } from './encryption'
 // ========================================
 
 export const saveSecureMood = async (moodData) => {
+  console.log('😊 Saving mood, data:', JSON.stringify(moodData).substring(0, 100))
+  
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
-
+  if (!user) {
+    console.error('❌ No user authenticated')
+    throw new Error('User not authenticated')
+  }
+  
+  console.log('✅ User authenticated:', user.id)
   const password = getSessionPassword()
+  console.log('🔐 Password available:', !!password)
   
   // Encrypt sensitive fields if password available
-  const encryptedNote = (password && moodData.note)
-    ? await encryptData(moodData.note, password, user.id)
-    : moodData.note
+  let encryptedNote
+  try {
+    encryptedNote = (password && moodData.note)
+      ? await encryptData(moodData.note, password, user.id)
+      : moodData.note
+  } catch (encError) {
+    console.error('⚠️ Encryption failed, saving unencrypted:', encError)
+    encryptedNote = moodData.note
+  }
+
+  const insertData = {
+    user_id: user.id,
+    mood: moodData.mood,
+    stress_level: moodData.stressLevel,
+    energy_level: moodData.energyLevel,
+    note: encryptedNote,
+    activities: moodData.activities || [],
+    date: moodData.date || new Date().toISOString().split('T')[0],
+    encrypted: !!password
+  }
+  
+  console.log('📤 Inserting into Supabase:', JSON.stringify(insertData).substring(0, 150))
 
   const { data, error } = await supabase
     .from('moods')
-    .insert([
-      {
-        user_id: user.id,
-        mood: moodData.mood,
-        stress_level: moodData.stressLevel,
-        energy_level: moodData.energyLevel,
-        note: encryptedNote,
-        activities: moodData.activities || [],
-        date: moodData.date || new Date().toISOString().split('T')[0],
-        encrypted: !!password // Flag to indicate data is encrypted
-      }
-    ])
+    .insert([insertData])
     .select()
     .single()
 
   if (error) {
-    console.error('Supabase saveSecureMood error:', error)
+    console.error('❌ Supabase saveSecureMood error:', error)
     throw new Error(error.message || 'Failed to save mood')
   }
+  
+  console.log('✅ Mood saved successfully, id:', data?.id)
   return data
 }
 
@@ -99,37 +116,56 @@ export const getSecureMoods = async (startDate = null, endDate = null) => {
 // ========================================
 
 export const saveSecureJournalEntry = async (entryData) => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
 
-  const password = getSessionPassword()
+    const password = getSessionPassword()
+    console.log('📝 Saving journal entry, encryption:', !!password)
 
-  // Encrypt content and title if password available
-  const encryptedContent = password 
-    ? await encryptData(entryData.content, password, user.id)
-    : entryData.content
-  const encryptedTitle = (password && entryData.title)
-    ? await encryptData(entryData.title, password, user.id)
-    : entryData.title
+    // Encrypt content and title if password available
+    let encryptedContent, encryptedTitle
+    
+    try {
+      encryptedContent = password 
+        ? await encryptData(entryData.content, password, user.id)
+        : entryData.content
+      encryptedTitle = (password && entryData.title)
+        ? await encryptData(entryData.title, password, user.id)
+        : entryData.title
+    } catch (encError) {
+      console.error('Encryption failed, saving unencrypted:', encError)
+      encryptedContent = entryData.content
+      encryptedTitle = entryData.title
+    }
 
-  const { data, error } = await supabase
-    .from('journal_entries')
-    .insert([
-      {
-        user_id: user.id,
-        title: encryptedTitle,
-        content: encryptedContent,
-        mood: entryData.mood,
-        tags: entryData.tags || [],
-        date: entryData.date || new Date().toISOString().split('T')[0],
-        encrypted: !!password
-      }
-    ])
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .insert([
+        {
+          user_id: user.id,
+          title: encryptedTitle,
+          content: encryptedContent,
+          mood: entryData.mood,
+          tags: entryData.tags || [],
+          date: entryData.date || new Date().toISOString().split('T')[0],
+          encrypted: !!password
+        }
+      ])
+      .select()
+      .single()
 
-  if (error) throw new Error(error.message)
-  return data
+    if (error) {
+      console.error('Supabase saveSecureJournalEntry error:', error)
+      throw new Error(error.message || 'Failed to save journal entry')
+    }
+    
+    console.log('✅ Journal entry saved successfully')
+    return data
+  } catch (error) {
+    console.error('saveSecureJournalEntry failed:', error)
+    throw error
+  }
 }
 
 export const getSecureJournalEntries = async () => {
@@ -175,28 +211,52 @@ export const getSecureJournalEntries = async () => {
 // ========================================
 
 export const saveSecureChatMessage = async (userId, content, sender) => {
-  const password = getSessionPassword()
+  console.log('💬 Saving chat message, userId:', userId, 'sender:', sender)
+  console.log('💬 Content length:', content?.length)
+  
+  try {
+    const password = getSessionPassword()
+    console.log('🔐 Password available:', !!password)
 
-  // Encrypt message content if password available
-  const encryptedContent = password
-    ? await encryptData(content, password, userId)
-    : content
+    // Encrypt message content if password available
+    let encryptedContent
+    try {
+      encryptedContent = password
+        ? await encryptData(content, password, userId)
+        : content
+      console.log('✅ Encryption successful, encrypted length:', encryptedContent?.length)
+    } catch (encError) {
+      console.error('⚠️ Encryption failed, saving unencrypted:', encError)
+      encryptedContent = content
+    }
 
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .insert([
-      {
-        user_id: userId,
-        content: encryptedContent,
-        sender: sender,
-        encrypted: !!password
-      }
-    ])
-    .select()
-    .single()
+    const insertData = {
+      user_id: userId,
+      content: encryptedContent,
+      sender: sender,
+      encrypted: !!password
+    }
+    
+    console.log('📤 Inserting chat message to Supabase...')
 
-  if (error) throw new Error(error.message)
-  return data
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert([insertData])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Supabase saveSecureChatMessage error:', error)
+      console.error('❌ Error details:', JSON.stringify(error))
+      throw new Error(error.message || 'Failed to save chat message')
+    }
+    
+    console.log('✅ Chat message saved successfully, id:', data?.id)
+    return data
+  } catch (error) {
+    console.error('❌ saveSecureChatMessage failed:', error)
+    throw error
+  }
 }
 
 export const getSecureChatMessages = async (userId) => {

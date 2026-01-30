@@ -6,8 +6,13 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Validate that environment variables are set
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.')
-  console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+  console.error('❌ Missing Supabase environment variables!')
+  console.error('VITE_SUPABASE_URL:', supabaseUrl ? '✅ SET' : '❌ MISSING')
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ SET' : '❌ MISSING')
+  console.error('Please check your Vercel environment variables.')
+} else {
+  console.log('✅ Supabase environment variables loaded')
+  console.log('📍 Supabase URL:', supabaseUrl)
 }
 
 // Create Supabase client
