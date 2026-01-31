@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Shield, Download, Trash2, Eye, EyeOff, Lock, Database, Server, AlertCircle, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
-import { getAllUserData, exportUserData, deleteAllUserData } from '../lib/secureDatabase'
+import { getAllUserData, exportUserData, deleteAllUserData, resetUserEncryption } from '../lib/secureDatabase'
 import { hasEncryptionSetup } from '../lib/encryption'
 
 export default function PrivacyDashboard({ user }) {
@@ -12,6 +12,7 @@ export default function PrivacyDashboard({ user }) {
   const [loading, setLoading] = useState(true)
   const [dataStats, setDataStats] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
   const [encryptionEnabled, setEncryptionEnabled] = useState(false)
 
@@ -71,6 +72,24 @@ export default function PrivacyDashboard({ user }) {
     } catch (error) {
       console.error('Delete failed:', error)
       toast.error('Failed to delete data')
+    }
+  }
+
+  const handleResetEncryption = async () => {
+    if (!showResetConfirm) {
+      setShowResetConfirm(true)
+      return
+    }
+
+    try {
+      toast.info('Resetting encryption...')
+      await resetUserEncryption()
+      toast.success('✅ Encryption reset! Your old data may not be accessible, but new data will save correctly.')
+      setShowResetConfirm(false)
+      setTimeout(() => window.location.reload(), 1500)
+    } catch (error) {
+      console.error('Reset encryption failed:', error)
+      toast.error('Failed to reset encryption')
     }
   }
 
@@ -242,6 +261,37 @@ export default function PrivacyDashboard({ user }) {
               <span>Export All My Data</span>
             </button>
             
+            {showResetConfirm ? (
+              <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                <p className="text-sm text-yellow-800 mb-3">
+                  ⚠️ <strong>Warning:</strong> This will reset your encryption key. Old encrypted data may become inaccessible. 
+                  Only use this if you're seeing "unable to decrypt" errors.
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleResetEncryption}
+                    className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                  >
+                    Yes, Reset Encryption
+                  </button>
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleResetEncryption}
+                className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-colors"
+              >
+                <Shield className="w-5 h-5" />
+                <span>Reset Encryption (Fix Decryption Issues)</span>
+              </button>
+            )}
+            
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
@@ -252,6 +302,7 @@ export default function PrivacyDashboard({ user }) {
             
             <p className="text-xs text-gray-500 text-center">
               Export downloads a JSON file with all your decrypted data. 
+              Reset encryption fixes "unable to decrypt" errors.
               Delete permanently removes all your data from our servers.
             </p>
           </div>

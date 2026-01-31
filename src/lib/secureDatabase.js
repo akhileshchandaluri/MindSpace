@@ -390,13 +390,38 @@ export const deleteAllUserData = async () => {
   const deletePromises = [
     supabase.from('moods').delete().eq('user_id', user.id),
     supabase.from('journal_entries').delete().eq('user_id', user.id),
-    supabase.from('chat_messages').delete().eq('user_id', user.id)
+    supabase.from('chat_messages').delete().eq('user_id', user.id),
+    supabase.from('goals').delete().eq('user_id', user.id)
   ]
 
   await Promise.all(deletePromises)
 
   // Clear local storage
   localStorage.removeItem(`encryption_salt_${user.id}`)
+  sessionStorage.clear()
+  
+  return true
+}
+
+/**
+ * Fix encryption issues by resetting encryption for current user
+ * This clears the old encryption salt and creates a new one
+ */
+export const resetUserEncryption = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  console.log('🔄 Resetting encryption for user:', user.id)
+  
+  // Clear old encryption salt
+  localStorage.removeItem(`encryption_salt_${user.id}`)
+  sessionStorage.clear()
+  
+  // Re-enable with new encryption
+  const { enableEncryption } = await import('./encryption')
+  await enableEncryption(user.id)
+  
+  console.log('✅ Encryption reset complete - please save new data')
   
   return true
 }
