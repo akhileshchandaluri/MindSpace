@@ -26,7 +26,14 @@ export default function AuthPage({ onLogin }) {
     try {
       const { data, error } = await supabase.auth.signInAnonymously()
       
-      if (error) throw error
+      if (error) {
+        console.error('Supabase anonymous auth error:', error)
+        throw error
+      }
+      
+      // Enable encryption for anonymous user
+      await enableEncryption(data.user.id)
+      console.log('✅ Encryption enabled for anonymous user')
       
       const userData = {
         id: data.user.id,
@@ -41,7 +48,7 @@ export default function AuthPage({ onLogin }) {
       navigate('/dashboard')
     } catch (err) {
       console.error('Anonymous login error:', err)
-      toast.error('Failed to continue as guest')
+      toast.error(err.message || 'Failed to continue as guest')
     } finally {
       setLoading(false)
     }

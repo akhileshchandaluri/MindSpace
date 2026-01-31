@@ -208,16 +208,27 @@ export const getSecureJournalEntries = async () => {
       if (password && entry.encrypted) {
         try {
           if (entry.content) {
-            entry.content = await decryptData(entry.content, password, user.id)
+            const decrypted = await decryptData(entry.content, password, user.id)
+            entry.content = decrypted
+            console.log('✅ Journal entry decrypted successfully, id:', entry.id)
           }
           if (entry.title) {
-            entry.title = await decryptData(entry.title, password, user.id)
+            const decryptedTitle = await decryptData(entry.title, password, user.id)
+            entry.title = decryptedTitle
           }
         } catch (err) {
-          console.error('Failed to decrypt journal entry:', err)
-          entry.content = '[Encrypted - unable to decrypt]'
-          entry.title = '[Encrypted]'
+          console.error('❌ Failed to decrypt journal entry:', entry.id, err)
+          console.error('Password available:', !!password)
+          console.error('Entry encrypted flag:', entry.encrypted)
+          // Return original encrypted data with warning
+          entry.decryption_error = true
+          entry.content = '⚠️ Unable to decrypt this entry. It may have been encrypted with a different key.'
+          entry.title = '🔒 Encrypted Entry'
         }
+      } else if (entry.encrypted && !password) {
+        console.warn('⚠️ Entry is encrypted but no password available')
+        entry.content = '🔐 This entry is encrypted. Please refresh the page.'
+        entry.title = '🔒 Encrypted'
       }
       return entry
     })
