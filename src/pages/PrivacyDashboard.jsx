@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Shield, Download, Trash2, Eye, EyeOff, Lock, Database, Server, AlertCircle, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
-import { getAllUserData, exportUserData, deleteAllUserData, resetUserEncryption } from '../lib/secureDatabase'
+import { getAllUserData, exportUserData, deleteAllUserData, resetUserEncryption, markAllDataAsUnencrypted } from '../lib/secureDatabase'
 import { hasEncryptionSetup } from '../lib/encryption'
 
 export default function PrivacyDashboard({ user }) {
@@ -90,6 +90,18 @@ export default function PrivacyDashboard({ user }) {
     } catch (error) {
       console.error('Reset encryption failed:', error)
       toast.error('Failed to reset encryption')
+    }
+  }
+
+  const handleUnlockOldData = async () => {
+    try {
+      toast.info('Unlocking old encrypted data...')
+      await markAllDataAsUnencrypted()
+      toast.success('✅ Done! Refresh the page to see your old data.')
+      setTimeout(() => window.location.reload(), 2000)
+    } catch (error) {
+      console.error('Unlock failed:', error)
+      toast.error('Failed to unlock data')
     }
   }
 
@@ -260,6 +272,15 @@ export default function PrivacyDashboard({ user }) {
               <Download className="w-5 h-5" />
               <span>Export All My Data</span>
             </button>
+
+            {/* NEW: Unlock Old Data Button */}
+            <button
+              onClick={handleUnlockOldData}
+              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+            >
+              <Eye className="w-5 h-5" />
+              <span>🔓 Unlock Old Encrypted Data (Show as Plain Text)</span>
+            </button>
             
             {showResetConfirm ? (
               <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
@@ -301,9 +322,10 @@ export default function PrivacyDashboard({ user }) {
             </button>
             
             <p className="text-xs text-gray-500 text-center">
-              Export downloads a JSON file with all your decrypted data. 
-              Reset encryption fixes "unable to decrypt" errors.
-              Delete permanently removes all your data from our servers.
+              <strong>Export:</strong> Downloads all your data as JSON. 
+              <strong>Unlock:</strong> Makes old encrypted data readable (removes encryption flag).
+              <strong>Reset:</strong> Fixes decryption errors for new data.
+              <strong>Delete:</strong> Permanently removes everything.
             </p>
           </div>
         </motion.div>

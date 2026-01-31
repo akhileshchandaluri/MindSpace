@@ -306,7 +306,7 @@ export const getSecureChatMessages = async (userId) => {
 
   // Decrypt messages if password available
   const decryptedData = await Promise.all(
-    data.map(async (message) => {
+    data.map(async (msg) => {
       if (msg.encrypted && password && msg.content) {
         try {
           const decrypted = await decryptData(msg.content, password, userId)
@@ -321,7 +321,7 @@ export const getSecureChatMessages = async (userId) => {
         msg.content = '🔐 [Encrypted - refresh page]'
       }
       // If not encrypted, return as-is
-      return message
+      return msg
     })
   )
 
@@ -429,6 +429,30 @@ export const resetUserEncryption = async () => {
   await enableEncryption(user.id)
   
   console.log('✅ Encryption reset complete - please save new data')
+  
+  return true
+}
+
+/**
+ * Mark all old encrypted data as unencrypted (shows plain text)
+ * Use this to "unlock" old data that can't be decrypted
+ */
+export const markAllDataAsUnencrypted = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  console.log('🔓 Marking all data as unencrypted for user:', user.id)
+
+  // Update all user's data to encrypted = false
+  const updates = [
+    supabase.from('moods').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true),
+    supabase.from('journal_entries').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true),
+    supabase.from('chat_messages').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true)
+  ]
+
+  await Promise.all(updates)
+  
+  console.log('✅ All data marked as unencrypted - refresh to see your data')
   
   return true
 }
