@@ -12,6 +12,7 @@ export default function JournalPage({ user }) {
   const [newEntry, setNewEntry] = useState('')
   const [showPrompts, setShowPrompts] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [hasDecryptionErrors, setHasDecryptionErrors] = useState(false)
 
   const prompts = [
     "What made me smile today?",
@@ -31,6 +32,9 @@ export default function JournalPage({ user }) {
       try {
         const data = await getSecureJournalEntries()
         setEntries(data)
+        // Check if any entries have decryption errors
+        const hasErrors = data.some(entry => entry.decryption_error)
+        setHasDecryptionErrors(hasErrors)
       } catch (error) {
         console.error('Failed to load journal entries:', error)
         toast.error('Failed to load journal entries')
@@ -93,11 +97,36 @@ export default function JournalPage({ user }) {
           <Lock className="w-5 h-5 text-primary-500 flex-shrink-0 mt-1" />
           <div>
             <p className="text-sm text-gray-700">
-              Your journal entries are completely private and stored only on your device. 
-              They are never shared or analyzed without your permission.
+              Your journal entries are end-to-end encrypted. Only you can read them.
             </p>
           </div>
         </motion.div>
+
+        {/* Decryption Error Banner */}
+        {hasDecryptionErrors && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="card bg-yellow-50 border-2 border-yellow-200 mb-8"
+          >
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 text-2xl">⚠️</div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 mb-2">Some entries cannot be decrypted</p>
+                <p className="text-sm text-gray-700 mb-3">
+                  Old entries were encrypted with a previous system and can't be read with your current encryption key.
+                </p>
+                <button
+                  onClick={() => navigate('/privacy')}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm font-medium"
+                >
+                  Fix This → Privacy Dashboard
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* New Entry */}
         <motion.div

@@ -205,7 +205,8 @@ export const getSecureJournalEntries = async () => {
   // Decrypt content and title if password available
   const decryptedData = await Promise.all(
     data.map(async (entry) => {
-      if (password && entry.encrypted) {
+      // If entry is marked as encrypted, try to decrypt
+      if (entry.encrypted && password) {
         try {
           if (entry.content) {
             const decrypted = await decryptData(entry.content, password, user.id)
@@ -218,18 +219,18 @@ export const getSecureJournalEntries = async () => {
           }
         } catch (err) {
           console.error('❌ Failed to decrypt journal entry:', entry.id, err)
-          console.error('Password available:', !!password)
-          console.error('Entry encrypted flag:', entry.encrypted)
-          // Return original encrypted data with warning
+          // Mark as undecryptable but keep in list
           entry.decryption_error = true
-          entry.content = '⚠️ Unable to decrypt this entry. It may have been encrypted with a different key.'
-          entry.title = '🔒 Encrypted Entry'
+          entry.original_content = entry.content // Keep for debugging
+          entry.content = '⚠️ This entry was encrypted with a different key and cannot be decrypted.\n\n💡 To fix this: Go to Profile → Privacy Dashboard → "Delete All My Data" to remove old encrypted entries, or use "Reset Encryption" to start fresh.'
+          entry.title = '🔒 Encrypted (Cannot Decrypt)'
         }
       } else if (entry.encrypted && !password) {
-        console.warn('⚠️ Entry is encrypted but no password available')
-        entry.content = '🔐 This entry is encrypted. Please refresh the page.'
+        // No password available
+        entry.content = '🔐 Encrypted data - password not available. Please refresh the page.'
         entry.title = '🔒 Encrypted'
       }
+      // If not encrypted, return as-is
       return entry
     })
   )
@@ -306,14 +307,20 @@ export const getSecureChatMessages = async (userId) => {
   // Decrypt messages if password available
   const decryptedData = await Promise.all(
     data.map(async (message) => {
-      if (password && message.encrypted && message.content) {
+      if (msg.encrypted && password && msg.content) {
         try {
-          message.content = await decryptData(message.content, password, userId)
+          const decrypted = await decryptData(msg.content, password, userId)
+          msg.content = decrypted
+          console.log('✅ Chat message decrypted, id:', msg.id)
         } catch (err) {
-          console.error('Failed to decrypt chat message:', err)
-          message.content = '[Encrypted - unable to decrypt]'
+          console.error('❌ Failed to decrypt chat message:', msg.id, err)
+          msg.content = '⚠️ [Encrypted with old key - cannot decrypt. Delete chat history to fix.]'
+          msg.decryption_error = true
         }
+      } else if (msg.encrypted && !password) {
+        msg.content = '🔐 [Encrypted - refresh page]'
       }
+      // If not encrypted, return as-is
       return message
     })
   )

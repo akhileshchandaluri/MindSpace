@@ -222,7 +222,7 @@ export default function TeacherDashboard({ user }) {
           >
             <TrendingUp className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Average Mood</p>
-            <p className="text-3xl font-medium text-gray-900">{classData.averageMood}</p>
+            <p className="text-3xl font-medium text-gray-900">{classData.avgMood}</p>
           </motion.div>
 
           <motion.div
@@ -233,7 +233,7 @@ export default function TeacherDashboard({ user }) {
           >
             <Activity className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Avg Stress Level</p>
-            <p className="text-3xl font-medium text-gray-900">{classData.averageStress}/10</p>
+            <p className="text-3xl font-medium text-gray-900">{classData.avgStress}/10</p>
           </motion.div>
 
           <motion.div

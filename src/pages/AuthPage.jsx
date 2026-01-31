@@ -23,11 +23,18 @@ export default function AuthPage({ onLogin }) {
 
   const handleAnonymousLogin = async () => {
     setLoading(true)
+    setError('') // Clear previous errors
     try {
       const { data, error } = await supabase.auth.signInAnonymously()
       
       if (error) {
         console.error('Supabase anonymous auth error:', error)
+        // If anonymous auth is disabled, show helpful message
+        if (error.message.includes('Anonymous sign-ins are disabled') || error.message.includes('anonymous')) {
+          toast.error('Guest mode is disabled. Please sign up with an email instead.')
+          setError('Guest mode is currently disabled. Please create an account or sign in.')
+          return
+        }
         throw error
       }
       
@@ -48,7 +55,9 @@ export default function AuthPage({ onLogin }) {
       navigate('/dashboard')
     } catch (err) {
       console.error('Anonymous login error:', err)
-      toast.error(err.message || 'Failed to continue as guest')
+      const errorMsg = err.message || 'Failed to continue as guest'
+      toast.error(errorMsg)
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
