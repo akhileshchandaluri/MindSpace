@@ -5,7 +5,7 @@ import { Heart, Mail, Lock, Eye, EyeOff, Shield, UserX } from 'lucide-react'
 import { signUp, signIn, getUserRole } from '../lib/auth'
 import { useToast } from '../components/Toast'
 import { supabase } from '../lib/supabase'
-import { setSessionPassword, enableEncryption } from '../lib/encryption'
+import { enableEncryption } from '../lib/encryption'
 
 export default function AuthPage({ onLogin }) {
   const navigate = useNavigate()
@@ -95,11 +95,10 @@ export default function AuthPage({ onLogin }) {
 
       const user = authData.user
 
-      // Enable end-to-end encryption
+      // Auto-enable end-to-end encryption
       try {
-        setSessionPassword(formData.password)
-        await enableEncryption(formData.password, user.id)
-        console.log('✅ Encryption enabled for user:', user.id)
+        await enableEncryption(user.id)
+        console.log('✅ Auto-encryption enabled for user:', user.id)
       } catch (encErr) {
         console.error('Encryption setup error:', encErr)
         // Continue anyway - encryption is optional enhancement

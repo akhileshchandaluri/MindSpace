@@ -12,7 +12,22 @@
  */
 
 import { supabase } from './supabase'
-import { encryptData, decryptData, getSessionPassword } from './encryption'
+import { encryptData, decryptData, getSessionPassword, getAutoPassword, enableEncryption } from './encryption'
+
+/**
+ * Get encryption password - auto-generates if not available
+ */
+const getEncryptionPassword = async (userId) => {
+  let password = getSessionPassword()
+  
+  if (!password) {
+    // Auto-enable encryption with user-specific key
+    await enableEncryption(userId)
+    password = getSessionPassword()
+  }
+  
+  return password
+}
 
 // ========================================
 // SECURE MOOD OPERATIONS (Encrypted)
@@ -28,7 +43,9 @@ export const saveSecureMood = async (moodData) => {
   }
   
   console.log('✅ User authenticated:', user.id)
-  const password = getSessionPassword()
+  
+  // Auto-get encryption password (generates if not exists)
+  const password = await getEncryptionPassword(user.id)
   console.log('🔐 Password available:', !!password)
   
   // Encrypt sensitive fields if password available
@@ -74,7 +91,8 @@ export const getSecureMoods = async (startDate = null, endDate = null) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
-  const password = getSessionPassword()
+  // Auto-get encryption password
+  const password = await getEncryptionPassword(user.id)
 
   let query = supabase
     .from('moods')
@@ -120,7 +138,8 @@ export const saveSecureJournalEntry = async (entryData) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    const password = getSessionPassword()
+    // Auto-get encryption password
+    const password = await getEncryptionPassword(user.id)
     console.log('📝 Saving journal entry, encryption:', !!password)
 
     // Encrypt content and title if password available
@@ -172,7 +191,8 @@ export const getSecureJournalEntries = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
-  const password = getSessionPassword()
+  // Auto-get encryption password
+  const password = await getEncryptionPassword(user.id)
 
   const { data, error } = await supabase
     .from('journal_entries')
@@ -215,7 +235,8 @@ export const saveSecureChatMessage = async (userId, content, sender) => {
   console.log('💬 Content length:', content?.length)
   
   try {
-    const password = getSessionPassword()
+    // Auto-get encryption password
+    const password = await getEncryptionPassword(userId)
     console.log('🔐 Password available:', !!password)
 
     // Encrypt message content if password available
@@ -260,7 +281,8 @@ export const saveSecureChatMessage = async (userId, content, sender) => {
 }
 
 export const getSecureChatMessages = async (userId) => {
-  const password = getSessionPassword()
+  // Auto-get encryption password
+  const password = await getEncryptionPassword(userId)
 
   const { data, error } = await supabase
     .from('chat_messages')
