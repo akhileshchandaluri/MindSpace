@@ -203,7 +203,7 @@ export const saveGoal = async (goalData) => {
         description: goalData.description,
         category: goalData.category,
         target_date: goalData.targetDate,
-        completed: false
+        completed: goalData.completed || false
       }
     ])
     .select()

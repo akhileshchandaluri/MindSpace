@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
 import { Heart, Target, CheckCircle, ArrowRight, Sparkles } from 'lucide-react'
-import { saveGoal, getGoals, updateGoal } from '../lib/database'
+import { saveGoal, getGoals, updateGoal, deleteGoal } from '../lib/database'
 
 export default function GuidancePage({ user }) {
   const navigate = useNavigate()
@@ -73,17 +73,25 @@ export default function GuidancePage({ user }) {
     
     try {
       if (!isCompleted) {
-        await saveGoal({
+        // Save new goal and mark it as completed
+        const savedGoal = await saveGoal({
           title: goal,
           description: '',
           category: 'weekly',
-          targetDate: null
+          targetDate: null,
+          completed: true // Mark as completed immediately
         })
-        await updateGoal(null, { completed: true })
         setSelectedGoals([...selectedGoals, goal])
         toast.success('Goal added! Keep going!')
       } else {
+        // Find and delete the goal
+        const data = await getGoals()
+        const goalToDelete = data.find(g => g.title === goal)
+        if (goalToDelete) {
+          await deleteGoal(goalToDelete.id)
+        }
         setSelectedGoals(selectedGoals.filter(g => g !== goal))
+        toast.success('Goal removed')
       }
       
       if (!isCompleted && selectedGoals.length + 1 === weeklyGoals.length) {
