@@ -81,18 +81,15 @@ export const generateSalt = () => {
 
 /**
  * Get or create salt for current user
+ * FIXED: Salt is now deterministic based on user ID
+ * This ensures the same user can decrypt their data on any device/browser
  */
 export const getUserSalt = (userId) => {
-  const saltKey = `encryption_salt_${userId}`
-  let salt = localStorage.getItem(saltKey)
-  
-  if (!salt) {
-    const newSalt = generateSalt()
-    salt = bufferToBase64(newSalt)
-    localStorage.setItem(saltKey, salt)
-  }
-  
-  return base64ToBuffer(salt)
+  // Generate deterministic salt from user ID
+  // This ensures same user ID = same salt = same encryption key = data accessible everywhere
+  const deterministicSalt = `mindspace_salt_${userId}_v1`
+  const encoder = new TextEncoder()
+  return encoder.encode(deterministicSalt)
 }
 
 /**

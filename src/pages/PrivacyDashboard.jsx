@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Shield, Download, Trash2, Eye, EyeOff, Lock, Database, Server, AlertCircle, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
-import { getAllUserData, exportUserData, deleteAllUserData, resetUserEncryption, markAllDataAsUnencrypted } from '../lib/secureDatabase'
+import { getAllUserData, exportUserData, deleteAllUserData, resetUserEncryption, deleteOldEncryptedData } from '../lib/secureDatabase'
 import { hasEncryptionSetup } from '../lib/encryption'
 
 export default function PrivacyDashboard({ user }) {
@@ -95,13 +95,13 @@ export default function PrivacyDashboard({ user }) {
 
   const handleUnlockOldData = async () => {
     try {
-      toast.info('Unlocking old encrypted data...')
-      await markAllDataAsUnencrypted()
-      toast.success('✅ Done! Refresh the page to see your old data.')
+      toast.info('Deleting old unreadable encrypted data...')
+      await deleteOldEncryptedData()
+      toast.success('✅ Done! Old encrypted data deleted. You can now save new data that will be readable!')
       setTimeout(() => window.location.reload(), 2000)
     } catch (error) {
-      console.error('Unlock failed:', error)
-      toast.error('Failed to unlock data')
+      console.error('Delete old data failed:', error)
+      toast.error('Failed to delete old encrypted data')
     }
   }
 
@@ -273,13 +273,13 @@ export default function PrivacyDashboard({ user }) {
               <span>Export All My Data</span>
             </button>
 
-            {/* NEW: Unlock Old Data Button */}
+            {/* Clear Old Encrypted Data Button */}
             <button
               onClick={handleUnlockOldData}
-              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
             >
-              <Eye className="w-5 h-5" />
-              <span>🔓 Unlock Old Encrypted Data (Show as Plain Text)</span>
+              <Trash2 className="w-5 h-5" />
+              <span>🗑️ Clear Old Encrypted Data (Can't Be Decrypted)</span>
             </button>
             
             {showResetConfirm ? (
@@ -323,9 +323,9 @@ export default function PrivacyDashboard({ user }) {
             
             <p className="text-xs text-gray-500 text-center">
               <strong>Export:</strong> Downloads all your data as JSON. 
-              <strong>Unlock:</strong> Makes old encrypted data readable (removes encryption flag).
+              <strong>Clear Old:</strong> Deletes old encrypted data that can't be read anymore.
               <strong>Reset:</strong> Fixes decryption errors for new data.
-              <strong>Delete:</strong> Permanently removes everything.
+              <strong>Delete All:</strong> Permanently removes everything.
             </p>
           </div>
         </motion.div>

@@ -434,25 +434,25 @@ export const resetUserEncryption = async () => {
 }
 
 /**
- * Mark all old encrypted data as unencrypted (shows plain text)
- * Use this to "unlock" old data that can't be decrypted
+ * Delete all old encrypted data that can't be decrypted
+ * This removes permanently unreadable data so users start fresh
  */
-export const markAllDataAsUnencrypted = async () => {
+export const deleteOldEncryptedData = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
-  console.log('🔓 Marking all data as unencrypted for user:', user.id)
+  console.log('🗑️ Deleting old encrypted data for user:', user.id)
 
-  // Update all user's data to encrypted = false
-  const updates = [
-    supabase.from('moods').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true),
-    supabase.from('journal_entries').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true),
-    supabase.from('chat_messages').update({ encrypted: false }).eq('user_id', user.id).eq('encrypted', true)
+  // Delete all entries marked as encrypted (old system)
+  const deletes = [
+    supabase.from('moods').delete().eq('user_id', user.id).eq('encrypted', true),
+    supabase.from('journal_entries').delete().eq('user_id', user.id).eq('encrypted', true),
+    supabase.from('chat_messages').delete().eq('user_id', user.id).eq('encrypted', true)
   ]
 
-  await Promise.all(updates)
+  await Promise.all(deletes)
   
-  console.log('✅ All data marked as unencrypted - refresh to see your data')
+  console.log('✅ Old encrypted data deleted - you can now save new readable data')
   
   return true
 }
