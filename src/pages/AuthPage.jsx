@@ -284,25 +284,6 @@ export default function AuthPage({ onLogin }) {
             >
               {loading ? 'Loading...' : (isLogin ? 'Login' : 'Create Account')}
             </button>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
-              </div>
-            </div>
-
-            <button 
-              type="button"
-              onClick={handleAnonymousLogin}
-              disabled={loading}
-              className="w-full btn-secondary py-3 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <UserX className="w-5 h-5" />
-              <span>Continue as Guest</span>
-            </button>
           </form>
 
           <p className="text-xs text-gray-500 text-center mt-6 leading-relaxed">

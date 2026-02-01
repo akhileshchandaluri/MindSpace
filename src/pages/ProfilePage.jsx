@@ -24,18 +24,45 @@ export default function ProfilePage({ user, onUpdateUser }) {
     setFormData(prev => ({ ...prev, email: user?.email || '' }))
   }, [user, navigate])
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault()
     
-    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-      toast.error('Passwords do not match')
-      return
-    }
+    try {
+      // Update password if provided
+      if (formData.newPassword) {
+        if (formData.newPassword !== formData.confirmPassword) {
+          toast.error('Passwords do not match')
+          return
+        }
+        
+        if (formData.newPassword.length < 6) {
+          toast.error('Password must be at least 6 characters')
+          return
+        }
 
-    // Update user
-    const updated = { ...user, email: formData.email }
-    onUpdateUser(updated)
-    toast.success('Profile updated successfully!')
+        // Update password in Supabase
+        const { error } = await supabase.auth.updateUser({
+          password: formData.newPassword
+        })
+
+        if (error) throw error
+        
+        toast.success('Password updated successfully!')
+        
+        // Clear password fields
+        setFormData(prev => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }))
+      } else {
+        toast.info('No changes to save')
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+      toast.error(error.message || 'Failed to update profile')
+    }
   }
 
   const handleExportData = async () => {

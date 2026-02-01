@@ -193,6 +193,7 @@ export const getSecureJournalEntries = async () => {
 
   // Auto-get encryption password
   const password = await getEncryptionPassword(user.id)
+  console.log('📖 Loading journal entries, password available:', !!password, 'user:', user.id)
 
   const { data, error } = await supabase
     .from('journal_entries')
@@ -202,9 +203,13 @@ export const getSecureJournalEntries = async () => {
 
   if (error) throw new Error(error.message)
 
+  console.log(`📖 Found ${data.length} journal entries`)
+
   // Decrypt content and title if password available
   const decryptedData = await Promise.all(
     data.map(async (entry) => {
+      console.log(`📖 Processing entry ${entry.id}, encrypted flag:`, entry.encrypted)
+      
       // If entry is marked as encrypted, try to decrypt
       if (entry.encrypted && password) {
         try {
@@ -227,8 +232,11 @@ export const getSecureJournalEntries = async () => {
         }
       } else if (entry.encrypted && !password) {
         // No password available
+        console.warn('⚠️ Entry is encrypted but no password available')
         entry.content = '🔐 Encrypted data - password not available. Please refresh the page.'
         entry.title = '🔒 Encrypted'
+      } else {
+        console.log('📄 Entry not encrypted, showing as-is, id:', entry.id)
       }
       // If not encrypted, return as-is
       return entry
