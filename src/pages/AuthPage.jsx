@@ -289,6 +289,13 @@ export default function AuthPage({ onLogin }) {
           <p className="text-xs text-gray-500 text-center mt-6 leading-relaxed">
             Your privacy is our priority. All data is encrypted and secure.
           </p>
+          
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-900 text-center">
+              <strong>⚠️ Important:</strong> Passwords cannot be reset before login due to our zero-knowledge encryption system. 
+              You can change your password after logging in from Profile settings. Please remember your password!
+            </p>
+          </div>
         </div>
 
         <p className="text-center text-sm text-gray-600 mt-6">

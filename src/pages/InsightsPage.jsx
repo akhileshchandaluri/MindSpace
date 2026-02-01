@@ -8,6 +8,7 @@ import { getSecureMoods } from '../lib/secureDatabase'
 export default function InsightsPage({ user }) {
   const navigate = useNavigate()
   const [insights, setInsights] = useState(null)
+  const [stats, setStats] = useState({ avgStress: 0, peakDay: 'N/A', trend: 'N/A' })
 
   useEffect(() => {
     if (!user) {
@@ -71,6 +72,28 @@ export default function InsightsPage({ user }) {
           { source: 'Not enough data', count: 1 }
         ]
 
+        // Calculate statistics
+        const totalStress = moodHistory.reduce((sum, entry) => sum + (entry.stress_level || 0), 0)
+        const avgStress = moodHistory.length > 0 ? (totalStress / moodHistory.length).toFixed(1) : 0
+        
+        // Find peak stress day
+        const stressByDay = {}
+        moodHistory.forEach(entry => {
+          const day = new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long' })
+          stressByDay[day] = (stressByDay[day] || []).concat(entry.stress_level || 0)
+        })
+        const dayAverages = Object.entries(stressByDay).map(([day, values]) => ({
+          day,
+          avg: values.reduce((a, b) => a + b, 0) / values.length
+        }))
+        const peakDay = dayAverages.sort((a, b) => b.avg - a.avg)[0]?.day || 'N/A'
+        
+        // Determine trend
+        const recent = moodHistory.slice(-7).reduce((sum, e) => sum + (e.mood === 'great' ? 5 : e.mood === 'good' ? 4 : e.mood === 'okay' ? 3 : e.mood === 'low' ? 2 : 1), 0) / 7
+        const older = moodHistory.slice(0, 7).reduce((sum, e) => sum + (e.mood === 'great' ? 5 : e.mood === 'good' ? 4 : e.mood === 'okay' ? 3 : e.mood === 'low' ? 2 : 1), 0) / 7
+        const trend = recent > older ? 'Improving' : recent < older ? 'Declining' : 'Stable'
+
+        setStats({ avgStress, peakDay, trend })
         setInsights({
           moodDistribution,
           stressTrend,
@@ -140,7 +163,7 @@ export default function InsightsPage({ user }) {
           >
             <TrendingUp className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Mood Trend</p>
-            <p className="text-2xl font-medium text-gray-900">Improving</p>
+            <p className="text-2xl font-medium text-gray-900">{stats.trend}</p>
           </motion.div>
 
           <motion.div
@@ -151,7 +174,7 @@ export default function InsightsPage({ user }) {
           >
             <Activity className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Avg Stress</p>
-            <p className="text-2xl font-medium text-gray-900">5.6/10</p>
+            <p className="text-2xl font-medium text-gray-900">{stats.avgStress}/10</p>
           </motion.div>
 
           <motion.div
@@ -162,7 +185,7 @@ export default function InsightsPage({ user }) {
           >
             <Calendar className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Peak Stress Day</p>
-            <p className="text-2xl font-medium text-gray-900">Thursday</p>
+            <p className="text-2xl font-medium text-gray-900">{stats.peakDay}</p>
           </motion.div>
 
           <motion.div

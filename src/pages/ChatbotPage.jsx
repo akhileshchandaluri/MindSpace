@@ -390,13 +390,13 @@ export default function ChatbotPage({ user }) {
             <p className="text-xs text-yellow-900">
               <strong>AI Safety Notice:</strong> This chat uses AI with multi-layer safety systems. 
               Critical situations use expert-written protocols (not AI). AI responses may occasionally 
-              be imperfect - always verify with a counselor. In crisis: <strong>KIRAN 1800-599-0019</strong> or <strong>Emergency 112</strong>
+              be imperfect - always verify with a counselor. In crisis: <strong>RVCE Cadabams 097414 76476</strong> or <strong>Emergency 112</strong>
             </p>
           </div>
         </div>
       </div>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            This is not therapy or medical advice. For emergencies, call 1800-599-0019 or 112.
+            This is not therapy or medical advice. For emergencies, call RVCE Cadabams 097414 76476 or Emergency 112.
           </p>
         </div>
       </div>

@@ -231,16 +231,13 @@ export default function GuidancePage({ user }) {
             <Heart className="w-8 h-8 text-primary-500 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="text-xl font-medium text-gray-900 mb-3">
-                Your Personalized Tip for Today
+                {user?.email ? `Tip for ${user.email.split('@')[0]}` : 'Your Personalized Tip for Today'}
               </h3>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Based on your recent stress patterns, we recommend taking a 5-minute break every hour 
-                during study sessions. This can help prevent burnout and improve focus.
+              <p className="text-gray-700 leading-relaxed">
+                Based on your recent patterns, try taking regular breaks during study sessions. 
+                Short 5-minute breaks every hour can help prevent burnout and improve focus. 
+                Remember to stay hydrated and practice deep breathing exercises.
               </p>
-              <button className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium">
-                <span>Try this now</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </motion.div>
