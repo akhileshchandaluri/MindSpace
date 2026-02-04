@@ -254,15 +254,14 @@ export default function ChatbotPage({ user }) {
               <p className="text-sm text-gray-500">Multi-layer safety system active</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleDeleteChat}
-              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-sm hover:shadow"
               title="Delete all chat history"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="text-xs sm:text-sm font-medium hidden sm:inline">Delete Chat</span>
-              <span className="text-xs sm:text-sm font-medium sm:hidden">Delete</span>
+              <span className="text-sm font-medium">Delete Chat</span>
             </button>
             <button
               onClick={() => setShowSafetyInfo(!showSafetyInfo)}

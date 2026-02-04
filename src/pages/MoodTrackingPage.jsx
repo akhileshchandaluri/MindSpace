@@ -8,6 +8,7 @@ export default function MoodTrackingPage({ user }) {
   const navigate = useNavigate()
   const [moodHistory, setMoodHistory] = useState([])
   const [selectedPeriod, setSelectedPeriod] = useState('week')
+  const [stats, setStats] = useState({ avgMood: 'N/A', avgStress: 0, streak: 0 })
 
   useEffect(() => {
     if (!user) {
@@ -24,6 +25,46 @@ export default function MoodTrackingPage({ user }) {
         
         const moods = await getSecureMoods(startDate, null)
         setMoodHistory(moods || [])
+        
+        // Calculate stats
+        if (moods && moods.length > 0) {
+          // Average mood (last 7 days)
+          const last7Days = moods.slice(0, 7)
+          const moodValues = { great: 5, good: 4, okay: 3, low: 2, struggling: 1 }
+          const avgMoodValue = last7Days.reduce((sum, m) => sum + (moodValues[m.mood] || 3), 0) / last7Days.length
+          let avgMood = 'Okay'
+          if (avgMoodValue >= 4.5) avgMood = 'Great'
+          else if (avgMoodValue >= 3.5) avgMood = 'Good'
+          else if (avgMoodValue >= 2.5) avgMood = 'Okay'
+          else if (avgMoodValue >= 1.5) avgMood = 'Low'
+          else avgMood = 'Struggling'
+          
+          // Average stress (last 7 days)
+          const avgStress = (last7Days.reduce((sum, m) => sum + (m.stress_level || 0), 0) / last7Days.length).toFixed(1)
+          
+          // Calculate streak (consecutive days)
+          let streak = 0
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          
+          for (let i = 0; i < moods.length; i++) {
+            const moodDate = new Date(moods[i].date || moods[i].created_at)
+            moodDate.setHours(0, 0, 0, 0)
+            const expectedDate = new Date(today)
+            expectedDate.setDate(today.getDate() - i)
+            expectedDate.setHours(0, 0, 0, 0)
+            
+            if (moodDate.getTime() === expectedDate.getTime()) {
+              streak++
+            } else {
+              break
+            }
+          }
+          
+          setStats({ avgMood, avgStress, streak })
+        } else {
+          setStats({ avgMood: 'N/A', avgStress: 0, streak: 0 })
+        }
       } catch (error) {
         console.error('Error loading mood history:', error)
         setMoodHistory([])
@@ -186,7 +227,7 @@ export default function MoodTrackingPage({ user }) {
           >
             <TrendingUp className="w-8 h-8 text-primary-500 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Average Mood</h3>
-            <p className="text-3xl font-medium text-gray-900">Good</p>
+            <p className="text-3xl font-medium text-gray-900">{stats.avgMood}</p>
             <p className="text-sm text-gray-600 mt-2">Based on last 7 days</p>
           </motion.div>
 
@@ -198,8 +239,8 @@ export default function MoodTrackingPage({ user }) {
           >
             <Activity className="w-8 h-8 text-primary-500 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Avg Stress Level</h3>
-            <p className="text-3xl font-medium text-gray-900">5.2/10</p>
-            <p className="text-sm text-gray-600 mt-2">Moderate stress detected</p>
+            <p className="text-3xl font-medium text-gray-900">{stats.avgStress}/10</p>
+            <p className="text-sm text-gray-600 mt-2">{stats.avgStress > 7 ? 'High stress detected' : stats.avgStress > 5 ? 'Moderate stress detected' : 'Low stress'}</p>
           </motion.div>
 
           <motion.div
@@ -210,8 +251,8 @@ export default function MoodTrackingPage({ user }) {
           >
             <Calendar className="w-8 h-8 text-primary-500 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Tracking Streak</h3>
-            <p className="text-3xl font-medium text-gray-900">14 days</p>
-            <p className="text-sm text-gray-600 mt-2">Keep it up!</p>
+            <p className="text-3xl font-medium text-gray-900">{stats.streak} {stats.streak === 1 ? 'day' : 'days'}</p>
+            <p className="text-sm text-gray-600 mt-2">{stats.streak > 0 ? 'Keep it up!' : 'Start tracking today!'}</p>
           </motion.div>
         </div>
       </div>
