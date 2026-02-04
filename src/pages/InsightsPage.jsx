@@ -29,7 +29,7 @@ export default function InsightsPage({ user }) {
           setInsights({
             moodDistribution: [],
             stressTrend: [],
-            stressSources: [],
+            moodByWeekday: [],
             isEmpty: true
           })
           return
@@ -56,21 +56,55 @@ export default function InsightsPage({ user }) {
     // Calculate stress trend (last 7 days)
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const stressTrend = []
-    const today = new Date().getDay()
+    const today = new Date()
     
-        for (let i = 6; i >= 0; i--) {
-          const dayIndex = (today - i + 7) % 7
-          const dayData = moodHistory.filter((_, idx) => idx >= moodHistory.length - 7 + (6 - i))[0]
-          stressTrend.push({
-            day: days[dayIndex],
-            stress: dayData?.stress_level || dayData?.stress || 0
-          })
-        }
+    // Get last 7 days of data
+    for (let i = 6; i >= 0; i--) {
+      const targetDate = new Date(today)
+      targetDate.setDate(today.getDate() - i)
+      const dayName = days[targetDate.getDay()]
+      
+      // Find moods for this specific date
+      const dayMoods = moodHistory.filter(m => {
+        const moodDate = new Date(m.date || m.created_at)
+        return moodDate.toDateString() === targetDate.toDateString()
+      })
+      
+      // Average stress for this day (or 0 if no data)
+      const avgStress = dayMoods.length > 0
+        ? dayMoods.reduce((sum, m) => sum + (m.stress_level || 0), 0) / dayMoods.length
+        : 0
+      
+      stressTrend.push({
+        day: dayName,
+        stress: parseFloat(avgStress.toFixed(1))
+      })
+    }
 
-        // Mock stress sources (this would need chat analysis in production)
-        const stressSources = [
-          { source: 'Not enough data', count: 1 }
-        ]
+        // Calculate mood distribution by day of week
+        const moodByWeekday = {}
+        days.forEach(day => {
+          moodByWeekday[day] = { great: 0, good: 0, okay: 0, low: 0, struggling: 0 }
+        })
+        
+        moodHistory.forEach(entry => {
+          const dayName = days[new Date(entry.date || entry.created_at).getDay()]
+          if (moodByWeekday[dayName] && entry.mood) {
+            moodByWeekday[dayName][entry.mood]++
+          }
+        })
+        
+        // Convert to chart data - most common mood per day
+        const moodByWeekdayChart = Object.entries(moodByWeekday).map(([day, moods]) => {
+          const total = Object.values(moods).reduce((a, b) => a + b, 0)
+          return {
+            day,
+            good: moods.great + moods.good,
+            neutral: moods.okay,
+            struggling: moods.low + moods.struggling,
+            total
+          }
+        })
 
         // Calculate statistics
         const totalStress = moodHistory.reduce((sum, entry) => sum + (entry.stress_level || 0), 0)
@@ -97,12 +131,12 @@ export default function InsightsPage({ user }) {
         setInsights({
           moodDistribution,
           stressTrend,
-          stressSources,
+          moodByWeekday: moodByWeekdayChart,
           isEmpty: false
         })
       } catch (error) {
         console.error('Error loading insights:', error)
-        setInsights({ isEmpty: true, moodDistribution: [], stressTrend: [], stressSources: [] })
+        setInsights({ isEmpty: true, moodDistribution: [], stressTrend: [], moodByWeekday: [] })
       }
     }
 
@@ -262,17 +296,17 @@ export default function InsightsPage({ user }) {
           </motion.div>
         </div>
 
-        {/* Stress Sources */}
+        {/* Mood by Weekday */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
           className="card"
         >
-          <h2 className="text-xl font-medium text-gray-900 mb-6">Top Stress Sources</h2>
+          <h2 className="text-xl font-medium text-gray-900 mb-6">Mood Patterns by Weekday</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={insights.stressSources}>
-              <XAxis dataKey="source" stroke="#9ca3af" />
+            <BarChart data={insights.moodByWeekday}>
+              <XAxis dataKey="day" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip 
                 contentStyle={{ 
@@ -281,9 +315,12 @@ export default function InsightsPage({ user }) {
                   borderRadius: '8px'
                 }}
               />
-              <Bar dataKey="count" fill="#0ea5e9" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="good" stackId="a" fill="#10b981" name="Great/Good" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="neutral" stackId="a" fill="#eab308" name="Okay" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="struggling" stackId="a" fill="#ef4444" name="Low/Struggling" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <p className="text-sm text-gray-600 mt-4">Shows which days of the week you tend to feel better or worse</p>
         </motion.div>
 
         {/* Insights Summary */}
@@ -295,12 +332,12 @@ export default function InsightsPage({ user }) {
         >
           <h2 className="text-xl font-medium text-gray-900 mb-4">AI Insights</h2>
           <div className="space-y-3 text-gray-700">
-            <p>✓ Your mood has been trending upward over the past week</p>
-            <p>✓ Stress levels peak on Thursdays - consider planning lighter activities</p>
-            <p>✓ Academic pressure is your primary stress source</p>
-            <p>✓ Weekend stress levels are significantly lower - good self-care pattern</p>
+            <p>✓ Your mood trend is currently: <strong>{stats.trend}</strong></p>
+            <p>✓ Average stress level: <strong>{stats.avgStress}/10</strong></p>
+            <p>✓ You experience peak stress on <strong>{stats.peakDay}s</strong></p>
+            <p>✓ Track your mood consistently to identify more patterns</p>
             <p className="text-sm text-primary-700 mt-4">
-              💡 Suggestion: Try breaking down large assignments earlier in the week to reduce Thursday stress
+              💡 Suggestion: Consider planning lighter activities or self-care on your high-stress days to maintain balance
             </p>
           </div>
         </motion.div>

@@ -10,6 +10,7 @@ export default function ProfilePage({ user, onUpdateUser }) {
   const navigate = useNavigate()
   const toast = useToast()
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     currentPassword: '',
     newPassword: '',
@@ -21,13 +22,39 @@ export default function ProfilePage({ user, onUpdateUser }) {
       navigate('/auth')
       return
     }
-    setFormData(prev => ({ ...prev, email: user?.email || '' }))
+    setFormData(prev => ({ 
+      ...prev, 
+      email: user?.email || '',
+      name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
+    }))
   }, [user, navigate])
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault()
     
     try {
+      let updated = false
+      
+      // Update name if changed
+      if (formData.name && formData.name !== user?.user_metadata?.full_name) {
+        const { error: nameError } = await supabase.auth.updateUser({
+          data: { full_name: formData.name }
+        })
+        
+        if (nameError) throw nameError
+        
+        // Update parent component state
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            user_metadata: { ...user.user_metadata, full_name: formData.name }
+          })
+        }
+        
+        updated = true
+        toast.success('Name updated successfully!')
+      }
+      
       // Update password if provided
       if (formData.newPassword) {
         if (formData.newPassword !== formData.confirmPassword) {
@@ -47,6 +74,7 @@ export default function ProfilePage({ user, onUpdateUser }) {
 
         if (error) throw error
         
+        updated = true
         toast.success('Password updated successfully!')
         
         // Clear password fields
@@ -56,7 +84,9 @@ export default function ProfilePage({ user, onUpdateUser }) {
           newPassword: '',
           confirmPassword: ''
         }))
-      } else {
+      }
+      
+      if (!updated) {
         toast.info('No changes to save')
       }
     } catch (error) {
@@ -124,6 +154,23 @@ export default function ProfilePage({ user, onUpdateUser }) {
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Display Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input-field pl-11"
+                  placeholder="Enter your name"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">This name will be displayed on your dashboard</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
@@ -133,9 +180,10 @@ export default function ProfilePage({ user, onUpdateUser }) {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="input-field pl-11"
-                  disabled={user.isAnonymous}
+                  disabled
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
 
             <div className="border-t border-gray-200 pt-4 mt-6">
