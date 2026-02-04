@@ -257,18 +257,20 @@ export default function ChatbotPage({ user }) {
           <div className="flex items-center space-x-2">
             <button
               onClick={handleDeleteChat}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
               title="Delete all chat history"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Delete Chat</span>
+              <span className="text-xs sm:text-sm font-medium hidden sm:inline">Delete Chat</span>
+              <span className="text-xs sm:text-sm font-medium sm:hidden">Delete</span>
             </button>
             <button
               onClick={() => setShowSafetyInfo(!showSafetyInfo)}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
             >
               <Shield className="w-4 h-4" />
-              <span className="text-sm font-medium">Safety Info</span>
+              <span className="text-xs sm:text-sm font-medium hidden sm:inline">Safety Info</span>
+              <span className="text-xs sm:text-sm font-medium sm:hidden">Safety</span>
             </button>
           </div>
         </div>

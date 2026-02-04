@@ -46,7 +46,8 @@ function App() {
             email: session.user.email,
             role: 'student',
             isAnonymous: false,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            user_metadata: session.user.user_metadata || {}
           }
           setUser(userData)
           
@@ -86,7 +87,8 @@ function App() {
             email: session.user.email,
             role: role || 'student',
             isAnonymous: false,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            user_metadata: session.user.user_metadata || {}
           })
         } catch (err) {
           console.error('Auth state change error:', err)
@@ -95,7 +97,8 @@ function App() {
             email: session.user.email,
             role: 'student',
             isAnonymous: false,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            user_metadata: session.user.user_metadata || {}
           })
         }
       } else {
@@ -121,7 +124,14 @@ function App() {
   }
 
   const handleUpdateUser = (userData) => {
-    setUser(userData)
+    setUser(prev => ({
+      ...prev,
+      ...userData,
+      user_metadata: {
+        ...prev?.user_metadata,
+        ...userData?.user_metadata
+      }
+    }))
     localStorage.setItem('mindspace_user', JSON.stringify(userData))
   }
 

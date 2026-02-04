@@ -43,11 +43,14 @@ export default function ProfilePage({ user, onUpdateUser }) {
         
         if (nameError) throw nameError
         
+        // Refresh session to get updated user metadata
+        const { data: { session } } = await supabase.auth.getSession()
+        
         // Update parent component state
-        if (onUpdateUser) {
+        if (onUpdateUser && session?.user) {
           onUpdateUser({
             ...user,
-            user_metadata: { ...user.user_metadata, full_name: formData.name }
+            user_metadata: session.user.user_metadata
           })
         }
         
