@@ -336,6 +336,23 @@ export const getSecureChatMessages = async (userId) => {
   return decryptedData
 }
 
+export const deleteSecureChatMessages = async (userId) => {
+  console.log('🗑️ Deleting all chat messages for user:', userId)
+  
+  const { error } = await supabase
+    .from('chat_messages')
+    .delete()
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('❌ Failed to delete chat messages:', error)
+    throw new Error(error.message || 'Failed to delete chat messages')
+  }
+  
+  console.log('✅ All chat messages deleted successfully')
+  return true
+}
+
 // ========================================
 // PRIVACY & DATA MANAGEMENT
 // ========================================

@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast'
-import { Send, Bot, User, AlertCircle, Heart, Shield, Info } from 'lucide-react'
+import { Send, Bot, User, AlertCircle, Heart, Shield, Info, Trash2 } from 'lucide-react'
 import { getSafeChatResponse } from '../lib/safeChatbot'
 import { detectEmotion } from '../lib/aiService'
-import { saveSecureChatMessage, getSecureChatMessages } from '../lib/secureDatabase'
+import { saveSecureChatMessage, getSecureChatMessages, deleteSecureChatMessages } from '../lib/secureDatabase'
 import DisclaimerBanner, { InlineDisclaimer, ConfidenceIndicator } from '../components/DisclaimerBanner'
 
 export default function ChatbotPage({ user }) {
@@ -180,6 +180,23 @@ export default function ChatbotPage({ user }) {
     }
   }
 
+  const handleDeleteChat = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL chat history? This cannot be undone!')) {
+      return
+    }
+
+    try {
+      await deleteSecureChatMessages(user.id)
+      setMessages([])
+      toast.success('Chat history deleted successfully')
+      // Reset with welcome message
+      await setWelcomeMessage()
+    } catch (error) {
+      console.error('Failed to delete chat:', error)
+      toast.error('Failed to delete chat history')
+    }
+  }
+
   if (!user) return null
 
   return (
@@ -237,13 +254,23 @@ export default function ChatbotPage({ user }) {
               <p className="text-sm text-gray-500">Multi-layer safety system active</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowSafetyInfo(!showSafetyInfo)}
-            className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-          >
-            <Shield className="w-4 h-4" />
-            <span className="text-sm font-medium">Safety Info</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleDeleteChat}
+              className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+              title="Delete all chat history"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Delete Chat</span>
+            </button>
+            <button
+              onClick={() => setShowSafetyInfo(!showSafetyInfo)}
+              className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              <span className="text-sm font-medium">Safety Info</span>
+            </button>
+          </div>
         </div>
         
         {/* Safety Info Panel */}

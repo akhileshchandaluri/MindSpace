@@ -8,7 +8,7 @@ import { getSecureMoods } from '../lib/secureDatabase'
 export default function InsightsPage({ user }) {
   const navigate = useNavigate()
   const [insights, setInsights] = useState(null)
-  const [stats, setStats] = useState({ avgStress: 0, peakDay: 'N/A', trend: 'N/A' })
+  const [stats, setStats] = useState({ avgStress: 0, peakDay: 'N/A', trend: 'N/A', burnoutRisk: 'Low' })
 
   useEffect(() => {
     if (!user) {
@@ -126,8 +126,23 @@ export default function InsightsPage({ user }) {
         const recent = moodHistory.slice(-7).reduce((sum, e) => sum + (e.mood === 'great' ? 5 : e.mood === 'good' ? 4 : e.mood === 'okay' ? 3 : e.mood === 'low' ? 2 : 1), 0) / 7
         const older = moodHistory.slice(0, 7).reduce((sum, e) => sum + (e.mood === 'great' ? 5 : e.mood === 'good' ? 4 : e.mood === 'okay' ? 3 : e.mood === 'low' ? 2 : 1), 0) / 7
         const trend = recent > older ? 'Improving' : recent < older ? 'Declining' : 'Stable'
+        
+        // Calculate burnout risk
+        // Based on: high stress (>7), declining mood, consecutive struggling days
+        const recentStress = moodHistory.slice(-7)
+        const highStressDays = recentStress.filter(m => (m.stress_level || 0) > 7).length
+        const strugglingDays = recentStress.filter(m => m.mood === 'struggling' || m.mood === 'low').length
+        
+        let burnoutRisk = 'Low'
+        if (avgStress > 7 && strugglingDays >= 4) {
+          burnoutRisk = 'High'
+        } else if (avgStress > 6 || highStressDays >= 4 || strugglingDays >= 3) {
+          burnoutRisk = 'Moderate'
+        } else if (avgStress > 5 || strugglingDays >= 2) {
+          burnoutRisk = 'Low-Moderate'
+        }
 
-        setStats({ avgStress, peakDay, trend })
+        setStats({ avgStress, peakDay, trend, burnoutRisk })
         setInsights({
           moodDistribution,
           stressTrend,
@@ -230,7 +245,14 @@ export default function InsightsPage({ user }) {
           >
             <AlertCircle className="w-6 h-6 text-primary-500 mb-2" />
             <p className="text-sm text-gray-600">Burnout Risk</p>
-            <p className="text-2xl font-medium text-yellow-600">Moderate</p>
+            <p className={`text-2xl font-medium ${
+              stats.burnoutRisk === 'High' ? 'text-red-600' : 
+              stats.burnoutRisk === 'Moderate' ? 'text-orange-600' : 
+              stats.burnoutRisk === 'Low-Moderate' ? 'text-yellow-600' : 
+              'text-green-600'
+            }`}>
+              {stats.burnoutRisk}
+            </p>
           </motion.div>
         </div>
 
